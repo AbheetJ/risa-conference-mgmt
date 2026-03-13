@@ -1,0 +1,1736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RISA Labs — Conference Management</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #f5f5f7;
+      --card:     #ffffff;
+      --border:   #e5e5ea;
+      --border2:  #d1d5db;
+      --shadow:   0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04);
+      --text:     #1a1a1a;
+      --text2:    #6b7280;
+      --text3:    #9ca3af;
+      --blue:     #4f86f7;
+      --blue-bg:  #eff6ff;
+      --blue-mid: #dbeafe;
+      --green:    #059669;
+      --green-bg: #d1fae5;
+      --red:      #dc2626;
+      --red-bg:   #fee2e2;
+      --gray-bg:  #f3f4f6;
+      --yellow:   #d97706;
+      --yellow-bg:#fef3c7;
+      --purple:   #7c3aed;
+      --purple-bg:#f5f3ff;
+      --purple-mid:#ede9fe;
+      --teal:     #0d9488;
+      --teal-bg:  #f0fdfa;
+      --teal-mid: #ccfbf1;
+      --orange:   #ea580c;
+      --orange-bg:#fff7ed;
+      --orange-mid:#fed7aa;
+      --pink:     #db2777;
+      --pink-bg:  #fdf2f8;
+      --pink-mid: #fce7f3;
+      --sw:       240px;
+      --radius:   14px;
+    }
+
+    html, body { height: 100%; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      overflow: hidden;
+      height: 100vh;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    /* ── SIDEBAR ──────────────────────────────── */
+    .sidebar {
+      width: var(--sw);
+      min-width: var(--sw);
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sb-brand {
+      padding: 18px 16px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-top: 3px solid var(--blue);
+    }
+
+    .sb-icon {
+      width: 32px; height: 32px;
+      background: var(--blue);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sb-icon svg { width: 18px; height: 18px; color: white; }
+
+    .sb-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.2;
+    }
+    .sb-tagline { font-size: 11px; color: var(--text3); margin-top: 1px; }
+
+    .sb-section {
+      padding: 14px 16px 6px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text3);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .ci {
+      padding: 8px 12px;
+      margin: 1px 6px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background .12s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ci:hover { background: var(--bg); }
+    .ci.active { background: var(--blue-bg); }
+    .ci.active .ci-name { color: var(--blue); font-weight: 600; }
+
+    .ci-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--border2);
+    }
+    .ci-dot.active { background: var(--blue); box-shadow: 0 0 0 2px rgba(79,134,247,0.2); }
+    .ci-dot.completed { background: var(--green); }
+
+    .ci-body { flex: 1; min-width: 0; }
+    .ci-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ci-prog-row { display: flex; align-items: center; gap: 5px; margin-top: 3px; }
+    .ci-bar { flex: 1; height: 2px; background: var(--border); border-radius: 1px; overflow: hidden; }
+    .ci-fill { height: 100%; background: var(--blue); border-radius: 1px; transition: width .3s; }
+    .ci-num { font-size: 10px; color: var(--text3); }
+
+    .sb-footer { padding: 10px; margin-top: auto; border-top: 1px solid var(--border); }
+    .sb-add {
+      width: 100%;
+      padding: 8px;
+      background: transparent;
+      border: 1px dashed var(--border2);
+      border-radius: 8px;
+      color: var(--text3);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .sb-add:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+
+    .sb-nav-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      margin: 4px 6px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text2);
+      transition: background .12s, color .12s;
+    }
+    .sb-nav-item:hover { background: var(--bg); color: var(--text); }
+    .sb-nav-item.active { background: var(--blue-bg); color: var(--blue); font-weight: 600; }
+    .sb-nav-item svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+    /* ── SUMMARY VIEW ────────────────────────── */
+    .summ-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+      gap: 14px;
+    }
+    .sc {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      cursor: pointer;
+      transition: box-shadow .15s, transform .15s;
+    }
+    .sc:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.10); transform: translateY(-1px); }
+    .sc-body { padding: 18px 20px 14px; flex: 1; }
+    .sc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+    .sc-name { font-size: 17px; font-weight: 700; color: var(--text); }
+    .sc-top-right { display: flex; align-items: center; gap: 8px; }
+    .sc-arrow { font-size: 15px; color: var(--text3); }
+    .sc-meta { font-size: 12px; color: var(--text2); margin-bottom: 3px; }
+    .sc-venue { font-size: 12px; color: var(--text3); margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sc-desc {
+      font-size: 12px;
+      color: var(--text2);
+      line-height: 1.6;
+      margin-bottom: 14px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .sc-stats { display: flex; gap: 0; margin-bottom: 14px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .sc-stat { flex: 1; padding: 8px 12px; text-align: center; border-right: 1px solid var(--border); }
+    .sc-stat:last-child { border-right: none; }
+    .sc-stat-lbl { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+    .sc-stat-val { font-size: 13px; font-weight: 600; color: var(--text); }
+    .sc-phases { display: flex; flex-direction: column; gap: 6px; }
+    .sc-phase { display: flex; align-items: center; gap: 8px; }
+    .sc-phase-lbl { font-size: 11px; color: var(--text3); width: 90px; flex-shrink: 0; }
+    .sc-phase-bar { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .sc-phase-fill { height: 100%; background: var(--blue); border-radius: 2px; transition: width .3s; }
+    .sc-phase-fill.done { background: var(--green); }
+    .sc-phase-pct { font-size: 10px; color: var(--text3); width: 28px; text-align: right; flex-shrink: 0; }
+    .sc-footer {
+      padding: 10px 20px;
+      background: var(--blue-bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .sc-footer-lbl { font-size: 11px; color: var(--text2); }
+    .sc-footer-val { font-size: 12px; font-weight: 600; color: var(--blue); }
+
+    /* ── MAIN ─────────────────────────────────── */
+    .main { flex: 1; height: 100vh; overflow-y: auto; display: flex; flex-direction: column; }
+
+    /* ── PAGE HEADER ─────────────────────────── */
+    .page-hdr {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 28px 18px;
+    }
+
+    .page-hdr-inner { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+
+    .page-hdr-left { display: flex; align-items: center; gap: 14px; }
+
+    .page-icon {
+      width: 44px; height: 44px;
+      background: var(--blue);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .page-icon svg { width: 24px; height: 24px; color: white; }
+
+    .page-title { font-size: 24px; font-weight: 700; color: var(--text); line-height: 1.2; }
+    .page-subtitle { font-size: 13px; color: var(--text2); margin-top: 3px; }
+
+    .page-hdr-right { display: flex; align-items: center; gap: 8px; padding-top: 4px; }
+
+    /* ── SEARCH BAR ─────────────────────────── */
+    .search-row {
+      padding: 14px 28px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 10px;
+    }
+
+    .search-wrap {
+      flex: 1;
+      position: relative;
+    }
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text3);
+      width: 16px; height: 16px;
+    }
+    .search-input {
+      width: 100%;
+      padding: 10px 14px 10px 40px;
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      background: var(--bg);
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .search-input:focus { outline: none; border-color: var(--blue); background: var(--card); box-shadow: 0 0 0 3px rgba(79,134,247,0.1); }
+    .search-input::placeholder { color: var(--text3); }
+
+    .filter-btn {
+      padding: 10px 16px;
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      background: var(--card);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .filter-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+
+    /* ── CONTENT ──────────────────────────────── */
+    .content { padding: 20px 28px; flex: 1; }
+
+    /* ── BUTTONS ──────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .btn-blue { background: var(--blue); color: white; }
+    .btn-blue:hover { background: #3a73e8; }
+    .btn-outline { background: var(--card); color: var(--text); border: 1px solid var(--border); }
+    .btn-outline:hover { border-color: var(--border2); background: var(--bg); }
+    .btn-blue-outline { background: var(--card); color: var(--blue); border: 1px solid var(--blue); }
+    .btn-blue-outline:hover { background: var(--blue-bg); }
+    .btn-ghost { background: transparent; color: var(--text2); }
+    .btn-ghost:hover { background: var(--bg); color: var(--text); }
+    .btn-red { background: transparent; color: var(--red); border: 1px solid rgba(220,38,38,.2); }
+    .btn-red:hover { background: var(--red-bg); }
+
+    /* ── BADGES / PILLS ──────────────────────── */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .pill-blue     { background: var(--blue-mid); color: var(--blue); }
+    .pill-green    { background: var(--green-bg); color: var(--green); }
+    .pill-red      { background: var(--red-bg);   color: var(--red);   }
+    .pill-gray     { background: var(--gray-bg);  color: var(--text2); }
+    .pill-yellow   { background: var(--yellow-bg);color: var(--yellow);}
+
+    .vtag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      background: var(--gray-bg);
+      color: var(--text3);
+    }
+
+    /* ── STAT CARDS ──────────────────────────── */
+    .stat-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
+    .stat-lbl { font-size: 12px; color: var(--text3); font-weight: 500; }
+    .stat-val { font-size: 28px; font-weight: 700; color: var(--text); margin-top: 4px; line-height: 1; }
+    .stat-val span { font-size: 14px; font-weight: 400; color: var(--text3); }
+    .stat-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+    /* ── CONFERENCE CARDS GRID ───────────────── */
+    .conf-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 14px; }
+
+    .cc {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      transition: box-shadow .15s, transform .15s;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .cc:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1), 0 0 0 1px rgba(79,134,247,0.2); transform: translateY(-1px); }
+
+    .cc-body { padding: 18px 20px; flex: 1; }
+
+    .cc-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px; }
+    .cc-name { font-size: 17px; font-weight: 600; color: var(--text); }
+    .cc-arrow { color: var(--text3); font-size: 16px; margin-top: 2px; flex-shrink: 0; }
+
+    .cc-meta { font-size: 12px; color: var(--text3); margin-bottom: 14px; }
+
+    .cc-row { display: flex; gap: 24px; margin-bottom: 12px; }
+    .cc-field { }
+    .cc-field-lbl { font-size: 11px; color: var(--text3); margin-bottom: 2px; }
+    .cc-field-val { font-size: 14px; font-weight: 500; color: var(--text); }
+
+    .cc-divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+    .cc-footer {
+      background: var(--blue-bg);
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid #dbeafe;
+    }
+    .cc-footer-lbl { font-size: 13px; color: var(--blue); font-weight: 500; }
+    .cc-footer-val { font-size: 13px; font-weight: 600; color: var(--text); }
+
+    .cc-progress-lbl { font-size: 12px; color: var(--text3); margin-bottom: 6px; display: flex; justify-content: space-between; }
+    .cc-pbar { height: 4px; background: var(--bg); border-radius: 2px; overflow: hidden; margin-bottom: 14px; }
+    .cc-pfill { height: 100%; background: var(--blue); border-radius: 2px; transition: width .3s; }
+
+    .cc-add {
+      background: var(--card);
+      border: 1.5px dashed var(--border2);
+      border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 6px;
+      min-height: 160px;
+      cursor: pointer;
+      color: var(--text3);
+      font-size: 13px;
+      font-weight: 500;
+      transition: all .15s;
+    }
+    .cc-add:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+    .cc-add-plus { font-size: 24px; font-weight: 300; line-height: 1; }
+
+    /* ── CONF DETAIL HEADER ──────────────────── */
+    .detail-hdr {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 28px 14px;
+    }
+    .detail-hdr-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+    .detail-hdr-name { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .detail-hdr-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .detail-hdr-txt { font-size: 12px; color: var(--text3); }
+
+    .detail-pct { text-align: right; }
+    .detail-pct-num { font-size: 24px; font-weight: 700; color: var(--blue); }
+    .detail-pct-sub { font-size: 11px; color: var(--text3); }
+    .detail-pct-bar { width: 80px; height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; margin-left: auto; overflow: hidden; }
+    .detail-pct-fill { height: 100%; background: var(--blue); border-radius: 2px; }
+
+    .fetch-row { display: flex; gap: 8px; align-items: center; }
+    .fetch-input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--bg);
+    }
+    .fetch-input:focus { outline: none; border-color: var(--blue); background: var(--card); }
+    .fetch-input::placeholder { color: var(--text3); }
+    .fetch-lbl { font-size: 12px; color: var(--text3); white-space: nowrap; }
+
+    /* ── TABS ─────────────────────────────────── */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--card); padding: 0 28px; }
+    .tab {
+      padding: 11px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text3);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color .15s;
+    }
+    .tab:hover { color: var(--text2); }
+    .tab.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+
+    /* ── TASK SECTIONS ───────────────────────── */
+    .task-sec {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 10px;
+      box-shadow: var(--shadow);
+    }
+
+    .ts-hdr {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 18px;
+      cursor: pointer;
+      user-select: none;
+      transition: background .1s;
+    }
+    .ts-hdr:hover { background: var(--bg); }
+
+    .ts-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .ts-title { font-size: 14px; font-weight: 600; color: var(--text); flex: 1; }
+
+    .ts-pill { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; background: var(--gray-bg); color: var(--text3); }
+    .ts-arrow { font-size: 10px; color: var(--text3); transition: transform .2s; }
+
+    .task-sec.collapsed .ts-arrow { transform: rotate(-90deg); }
+    .task-sec.collapsed .ts-body { display: none; }
+    .ts-body { border-top: 1px solid var(--border); }
+
+    /* ── TASK ITEMS ──────────────────────────── */
+    .ti {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--border);
+      transition: background .1s;
+    }
+    .ti:last-child { border-bottom: none; }
+    .ti:hover { background: #fafafa; }
+
+    .ti-cb {
+      width: 16px; height: 16px;
+      border: 1.5px solid var(--border2);
+      border-radius: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-top: 2px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .ti-cb.done { background: var(--blue); border-color: var(--blue); }
+    .ti-cb.done::after { content: '✓'; color: white; font-size: 10px; font-weight: 700; }
+
+    .ti-body { flex: 1; min-width: 0; }
+    .ti-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 5px; }
+    .ti-title.struck { text-decoration: line-through; color: var(--text3); }
+
+    .ti-inp { }
+    .ti-inp input, .ti-inp textarea {
+      width: 100%;
+      padding: 7px 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 12px;
+      color: var(--text);
+      background: var(--bg);
+    }
+    .ti-inp input:focus, .ti-inp textarea:focus { outline: none; border-color: var(--blue); background: var(--card); box-shadow: 0 0 0 2px rgba(79,134,247,0.1); }
+    .ti-inp input::placeholder, .ti-inp textarea::placeholder { color: var(--text3); }
+    .ti-inp textarea { resize: vertical; min-height: 54px; }
+
+    .ti-meta { display: flex; align-items: center; gap: 8px; margin-top: 7px; flex-wrap: wrap; }
+    .ti-meta-lbl { font-size: 11px; color: var(--text3); font-weight: 500; }
+
+    .sel {
+      padding: 3px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text2);
+      background: var(--bg);
+      cursor: pointer;
+    }
+    .sel:focus { outline: none; border-color: var(--blue); }
+
+    /* ── OVERVIEW LAYOUT ─────────────────────── */
+    .ov-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .ov-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow); }
+    .ov-card-title { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 14px; }
+
+    .df { margin-bottom: 12px; }
+    .df label { display: block; font-size: 11px; color: var(--text3); font-weight: 500; margin-bottom: 4px; }
+    .df input, .df textarea, .df select {
+      width: 100%;
+      padding: 8px 11px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 13px;
+      color: var(--text);
+      background: var(--bg);
+    }
+    .df input:focus, .df textarea:focus, .df select:focus { outline: none; border-color: var(--blue); background: var(--card); box-shadow: 0 0 0 2px rgba(79,134,247,0.1); }
+    .df input::placeholder, .df textarea::placeholder { color: var(--text3); }
+    .df textarea { resize: vertical; min-height: 70px; }
+    .df-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* phase progress */
+    .ph-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .ph-name { font-size: 12px; font-weight: 500; color: var(--text); min-width: 110px; }
+    .ph-bar { flex: 1; height: 4px; background: var(--bg); border-radius: 2px; overflow: hidden; }
+    .ph-fill { height: 100%; background: var(--blue); border-radius: 2px; }
+    .ph-num { font-size: 11px; color: var(--text3); min-width: 52px; text-align: right; }
+
+    /* team */
+    .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap: 8px; }
+    .team-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px 12px; text-align: center; }
+    .team-ava { width: 32px; height: 32px; border-radius: 50%; background: var(--blue); color: white; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; }
+    .team-name { font-size: 12px; font-weight: 600; color: var(--text); }
+    .team-role { font-size: 11px; color: var(--text3); margin-top: 2px; }
+    .team-add { background: var(--bg); border: 1.5px dashed var(--border2); border-radius: 10px; padding: 14px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; color: var(--text3); font-size: 11px; font-weight: 500; min-height: 82px; transition: all .15s; }
+    .team-add:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+
+    .divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+    /* ── MODAL ────────────────────────────────── */
+    .m-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .modal { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 26px; width: 100%; max-width: 440px; max-height: 88vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.15); }
+    .modal-lg { max-width: 520px; }
+    .modal-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 18px; }
+    .mf { margin-bottom: 13px; }
+    .mf label { display: block; font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 5px; }
+    .mf input, .mf select, .mf textarea { width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 13px; color: var(--text); background: var(--bg); }
+    .mf input:focus, .mf select:focus, .mf textarea:focus { outline: none; border-color: var(--blue); background: var(--card); box-shadow: 0 0 0 2px rgba(79,134,247,0.12); }
+    .mf input::placeholder, .mf textarea::placeholder { color: var(--text3); }
+    .mf textarea { resize: vertical; min-height: 70px; }
+    .m-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+    /* ── SECTION HEADING ─────────────────────── */
+    .sec-heading { font-size: 12px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+
+    /* ── TOAST ────────────────────────────────── */
+    .toast-wrap { position: fixed; bottom: 18px; right: 18px; z-index: 9999; display: flex; flex-direction: column; gap: 6px; }
+    .toast { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 11px 14px; font-size: 13px; color: var(--text); box-shadow: 0 4px 16px rgba(0,0,0,0.1); animation: tup .18s ease; max-width: 280px; display: flex; align-items: center; gap: 8px; }
+    .toast-ok  { border-left: 3px solid var(--blue); }
+    .toast-err { border-left: 3px solid var(--red); }
+    @keyframes tup { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+    /* ── SECTION ICONS BG COLORS ─────────────── */
+    .ic-blue   { background: var(--blue-mid); }
+    .ic-green  { background: var(--green-bg); }
+    .ic-yellow { background: var(--yellow-bg); }
+    .ic-red    { background: var(--red-bg); }
+    .ic-purple { background: var(--purple-mid); }
+    .ic-pink   { background: var(--pink-mid); }
+    .ic-teal   { background: var(--teal-mid); }
+    .ic-orange { background: var(--orange-mid); }
+
+    /* ── STAT CARD COLOR ACCENTS ─────────────── */
+    .stat-card { position: relative; overflow: hidden; }
+    .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: var(--radius) var(--radius) 0 0; }
+    .stat-card-blue::before  { background: var(--blue); }
+    .stat-card-green::before { background: var(--green); }
+    .stat-card-orange::before{ background: var(--orange); }
+    .stat-card-purple::before{ background: var(--purple); }
+    .ic-gray   { background: var(--gray-bg); }
+    .ic-purple { background: #ede9fe; }
+    .ic-pink   { background: #fce7f3; }
+    .ic-teal   { background: #ccfbf1; }
+  </style>
+</head>
+
+<body>
+
+<!-- ── SIDEBAR ──────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sb-brand">
+    <div class="sb-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+    </div>
+    <div>
+      <div class="sb-name">RISA Labs</div>
+      <div class="sb-tagline">Conference GTM</div>
+    </div>
+  </div>
+
+  <div id="sb-summary-btn" class="sb-nav-item" onclick="showSummary()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+      <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+    </svg>
+    Summary View
+  </div>
+
+  <div class="sb-section">Conferences</div>
+  <div id="conf-list"></div>
+
+  <div class="sb-footer">
+    <button class="sb-add" onclick="openAddModal()">+ Add Conference</button>
+  </div>
+</aside>
+
+<!-- ── MAIN ─────────────────────────────────────── -->
+<main class="main">
+  <div id="page-header"></div>
+  <div id="search-row-wrap"></div>
+  <div id="tabs-wrap"></div>
+  <div class="content" id="main-content"></div>
+</main>
+
+<div id="mroot"></div>
+<div class="toast-wrap" id="toasts"></div>
+
+<script>
+// ════════════════════════════════════════════════
+//  CONSTANTS
+// ════════════════════════════════════════════════
+const VERTICALS = ['Oncology','Community Oncology','Cancer Centers','Health Systems','Pharmacy','National','RCM','Regional'];
+
+const DEFAULT_CONFS = [
+  {
+    id:'hopa', name:'HOPA', vertical:'Pharmacy', status:'upcoming',
+    url:'https://www.hoparx.org/hopa-learn/conferences-events/annual-conference/',
+    dates:'March 25–27, 2026',
+    venue:'New Orleans, LA (venue TBD)',
+    description:'The Hematology/Oncology Pharmacy Association (HOPA) Annual Conference brings together oncology pharmacy professionals to advance clinical practice, share research, and improve cancer patient care. A premier event for oncology pharmacists, pharmacy technicians, and allied health professionals.',
+    audienceCount:'1,700+',
+    icpCount:'~500 (oncology pharmacists, pharmacy directors, oncology clinical specialists)',
+  },
+  {
+    id:'nccn', name:'NCCN', vertical:'National', status:'upcoming',
+    url:'https://www.nccn.org/education-research/educational-events-and-programs/annual-conference',
+    dates:'March 27–29, 2026',
+    venue:'Caribe Royale Orlando, Orlando, FL',
+    description:'The NCCN Annual Conference gathers multidisciplinary oncology clinicians and thought leaders to discuss the latest cancer treatment guidelines, emerging therapies, and advances in oncology care across all major tumor types.',
+    audienceCount:'1,500+',
+    icpCount:'~800 (medical oncologists, cancer program directors, cancer center administrators)',
+  },
+  {
+    id:'acca', name:'ACCA', vertical:'Regional', status:'upcoming',
+    url:'https://www.cancercenteradministrators.org/madison-26',
+    dates:'April 11–14, 2026',
+    venue:'Monona Terrace, Madison, WI',
+    description:'The ACCA Cancer Center Administrators Forum (CCAF) Madison 2026 brings together cancer center administrators and leaders to advance cancer program management, operations, and patient-centered care. Pre-conference workshops begin April 11.',
+    audienceCount:'800+',
+    icpCount:'~400 (cancer center administrators, oncology program directors, clinical directors)',
+  },
+  {
+    id:'beckers-oncology', name:'Beckers Oncology', vertical:'Oncology', status:'upcoming',
+    url:'https://conferences.beckershospitalreview.com/oncologysummit',
+    dates:'April 13–14, 2026',
+    venue:'Loews Chicago, Chicago, IL',
+    description:"Becker's Oncology Executive Summit convenes oncology leaders and hospital executives to explore what's next in cancer care, covering precision oncology, cell and immunotherapies, care continuum models, and rural cancer delivery.",
+    audienceCount:'3,000+',
+    icpCount:'~600 (oncology service line VPs, CMOs, CTOs, cancer center CEOs)',
+  },
+  {
+    id:'beckers-cpo', name:'Beckers CPO', vertical:'Pharmacy', status:'upcoming',
+    url:'https://conferences.beckershospitalreview.com/spring-cpo-2026',
+    dates:'Spring: Apr 15–16, 2026 · Fall: Nov 4–6, 2026',
+    venue:'Hyatt Regency Chicago (Spring) · Chicago, IL (Fall venue TBD)',
+    description:"Becker's Chief Pharmacy Officer Summit convenes pharmacy leaders from hospitals and health systems to address drug cost management, specialty pharmacy strategy, clinical program innovation, and the evolving role of pharmacy in value-based care.",
+    audienceCount:'500+',
+    icpCount:'~250 (Chief Pharmacy Officers, VP Pharmacy, pharmacy directors at health systems)',
+  },
+  {
+    id:'asembia', name:'Asembia', vertical:'Pharmacy', status:'upcoming',
+    url:'https://asembia.com/events/axs26-summit/',
+    dates:'April 26–30, 2026',
+    venue:'Wynn & Encore Las Vegas, Las Vegas, NV',
+    description:"Asembia's AXS26 Specialty Pharmacy Summit returns to Wynn & Encore Las Vegas. The largest specialty pharmacy industry gathering in the US connects manufacturers, payers, specialty pharmacies, and healthcare providers to advance patient access and innovation in specialty therapy.",
+    audienceCount:'5,000+',
+    icpCount:'~2,000 (specialty pharmacy directors, oncology payer pharmacy leads, manufacturer market access teams)',
+  },
+  {
+    id:'coa', name:'COA', vertical:'Community Oncology', status:'upcoming',
+    url:'https://coaconference.com/',
+    dates:'April 28–29, 2026',
+    venue:'Orlando, FL (venue TBD)',
+    description:'The Community Oncology Alliance (COA) 2026 Community Oncology Conference, themed "Innovation in Practice," is the premier event for independent community oncology practices with 2,000+ attendees. Sessions span business, pharmacy, advocacy, and clinical/fellows tracks.',
+    audienceCount:'2,000+',
+    icpCount:'~700 (independent community oncology practice owners, administrators, medical directors)',
+  },
+  {
+    id:'thma', name:'THMA Oncology Forum', vertical:'Health Systems', status:'upcoming',
+    url:'https://hmacademy.com/ind-convening/oncology-forum',
+    dates:'May 6–8, 2026',
+    venue:'Fort Lauderdale, FL (specific hotel TBD)',
+    description:'The THMA Oncology Forum is an invitation-only, retreat-style event with a strict 1:1 health system-to-industry ratio. It unites senior oncology service line executives with pharma and life sciences commercial leaders to explore clinical program growth, technology, and strategic partnerships.',
+    audienceCount:'300+',
+    icpCount:'~150 (VP Oncology Service Line, health system CMOs, oncology strategy leads)',
+  },
+  {
+    id:'ci4cc', name:'Ci4cc', vertical:'Cancer Centers', status:'upcoming',
+    url:'https://www.ci4cc.org/events',
+    dates:'Spring: Apr 29–30, 2026 (San Diego, CA) · Fall: TBD (Portland, OR)',
+    venue:'San Diego, CA (Spring) · Portland, OR (Fall)',
+    description:'Cancer Informatics for Cancer Centers (Ci4cc) symposia connect informatics and data science leaders from NCI-designated cancer centers. Focused discussions cover cancer data strategy, AI/ML in oncology, interoperability, and real-world evidence.',
+    audienceCount:'200+',
+    icpCount:'~120 (cancer informatics leads, CIOs, data science directors at NCI-designated cancer centers)',
+  },
+];
+
+// ════════════════════════════════════════════════
+//  TASK TEMPLATE
+// ════════════════════════════════════════════════
+const SEC = {
+  databasing: {
+    title:'Conference Databasing', key:'databasing', icon:'📋', color:'ic-blue',
+    tasks:[
+      {id:'db_about',     title:'Conference description written',   ph:'Describe the conference focus, audience, format...', big:true},
+      {id:'db_venue',     title:'Venue confirmed',                  ph:'Venue name and full address'},
+      {id:'db_dates',     title:'Conference dates confirmed',       ph:'e.g. April 14–16, 2025'},
+      {id:'db_audience',  title:'Total audience count documented',  ph:'e.g. 2,000 attendees'},
+      {id:'db_icp',       title:'ICP count identified',             ph:'# of ideal customer profiles attending'},
+      {id:'db_agenda',    title:'Agenda obtained',                  ph:'Link to agenda or key sessions'},
+      {id:'db_sponsors',  title:'Sponsor list compiled',            ph:'List of confirmed sponsors...', big:true},
+      {id:'db_prosp',     title:'Prospectus obtained',              ph:'Link to sponsorship prospectus'},
+      {id:'db_poc',       title:'Point of contact identified',      ph:'Name, email, phone'},
+      {id:'db_forms',     title:'Registration forms completed',     ph:'Link to forms or confirmation #'},
+      {id:'db_floor',     title:'Floor plan obtained',              ph:'Link to floor plan'},
+    ]
+  },
+  sponsorship: {
+    title:'Sponsorship & Presence', key:'sponsorship', icon:'🎪', color:'ic-purple',
+    tasks:[
+      {id:'sp_roundtable',title:'Roundtable booked',                ph:'Capacity, date/time, cost'},
+      {id:'sp_booth',     title:'Booth booked',                     ph:'Booth size, number, cost, location'},
+      {id:'sp_panel',     title:'Panel participation confirmed',    ph:'Topic, speaker, date/time'},
+      {id:'sp_roomdrop',  title:'Room drop arranged',               ph:'Materials, quantity, delivery timing'},
+      {id:'sp_keynote',   title:'Keynote slot secured',             ph:'Topic, speaker, date/time'},
+      {id:'sp_lunch',     title:'Lunch / Dinner / Reception',       ph:'Venue, date/time, capacity, cost'},
+      {id:'sp_wifi',      title:'WiFi sponsorship confirmed',       ph:'Cost, branded splash page details'},
+      {id:'sp_other',     title:'Other marketing activities',       ph:'Additional marketing...', big:true},
+      {id:'sp_boothn',    title:'Booth number confirmed',           ph:'Booth #'},
+      {id:'sp_appaccess', title:'Conference app access obtained',   ph:'Login credentials / notes'},
+      {id:'sp_tickets',   title:'Tickets confirmed & distributed',  ph:'# tickets, who received them'},
+    ]
+  },
+  story: {
+    title:'Messaging & Story', key:'story', icon:'🎯', color:'ic-yellow',
+    tasks:[
+      {id:'st_attendee',  title:'Narrative crafted from attendee list',   ph:'Key story shaped by who is attending...', big:true},
+      {id:'st_target',    title:'Story tailored to target account list',  ph:'Adjustments for priority accounts...', big:true},
+      {id:'st_product',   title:'Recent product developments woven in',   ph:'New features / launches to highlight...', big:true},
+    ]
+  },
+  design: {
+    title:'Design Deliverables', key:'design', icon:'🎨', color:'ic-pink',
+    tasks:[
+      {id:'des_logo',     title:'Event logo created',               ph:'Link to logo files'},
+      {id:'des_etitle',   title:'Event title finalized',            ph:'Official title for this conference'},
+      {id:'des_desc',     title:'Event description written',        ph:'Short description for materials...', big:true},
+      {id:'des_flyers',   title:'Flyers designed & printed',        ph:'Design link, print vendor, quantity'},
+      {id:'des_cards',    title:'Visiting cards printed',           ph:'Quantity, vendor, delivery date'},
+      {id:'des_demo',     title:'Demo prepared & tested',           ph:'Demo scenario, link, last test date...', big:true},
+      {id:'des_deck',     title:'Presentation deck finalized',      ph:'Link to deck'},
+      {id:'des_test',     title:'Testimonials compiled',            ph:'Customer quotes, case study links...', big:true},
+      {id:'des_print',    title:'All materials printed & shipped',  ph:'Vendor, order #, delivery confirmation'},
+      {id:'des_backdrop', title:'Booth backdrop ordered',           ph:'Vendor, size, design link, ship date'},
+      {id:'des_standee',  title:'Standee designed & ordered',       ph:'Vendor, dimensions, design link'},
+      {id:'des_vendor',   title:'Booth vendor quotes obtained',     ph:'Vendors contacted, quotes, winner...', big:true},
+    ]
+  },
+  leadgen: {
+    title:'Lead Generation Setup', key:'leadgen', icon:'🎯', color:'ic-green',
+    tasks:[
+      {id:'lg_spk_org',   title:'Speaker list from conference organizers', ph:'Speakers: name, title, org...', big:true},
+      {id:'lg_spk_app',   title:'Speaker list from conference app',        ph:'App-sourced speakers...', big:true},
+      {id:'lg_att_org',   title:'Attendee list from organizers',           ph:'Attendee details...', big:true},
+      {id:'lg_att_app',   title:'Attendee list from conference app',       ph:'App-sourced attendees...', big:true},
+      {id:'lg_p1',        title:'P1 targets — Cancer Centers',             ph:'Cancer Center accounts to prioritize...', big:true},
+      {id:'lg_p2',        title:'P2 targets — Health Systems',             ph:'Health System accounts...', big:true},
+      {id:'lg_p3',        title:'P3 contacts — Product / Pharma / Payer / EMR', ph:'Partnership targets...', big:true},
+    ]
+  },
+  campaigns: {
+    title:'Marketing Campaigns', key:'campaigns', icon:'📣', color:'ic-yellow',
+    tasks:[
+      {id:'mc_email',     title:'Email campaign drafted & scheduled',      ph:'Subject lines, send dates, audience...', big:true},
+      {id:'mc_linkedin',  title:'LinkedIn outreach campaign ready',        ph:'Connection note, follow-up sequence...', big:true},
+      {id:'mc_cold',      title:'Cold calling script prepared',            ph:'Script and call list...', big:true},
+      {id:'mc_app',       title:'Conference app messaging prepared',       ph:'In-app messages drafted...', big:true},
+      {id:'mc_intel',     title:'Account & person intel gathered',         ph:'Research notes on targets...', big:true},
+      {id:'mc_hook',      title:'Copy hooks & subject lines finalized',    ph:'Subject line hooks, personalization...', big:true},
+      {id:'mc_retarget',  title:'Retargeting strategy defined',            ph:'Channels, sequences, timing...', big:true},
+      {id:'mc_booked',    title:'Meetings booked on calendar',             ph:'# meetings booked, key accounts'},
+    ]
+  },
+  people: {
+    title:'RISA Team & People to Meet', key:'people', icon:'👥', color:'ic-blue',
+    tasks:[
+      {id:'ppl_team',     title:'RISA attendees confirmed with roles',     ph:'Name → Role: Priya → Booth Lead...', big:true},
+      {id:'ppl_faces',    title:'Face list prepared — know who to meet',   ph:'Name | Title | Org | Talking point...', big:true},
+      {id:'ppl_speakers', title:'Key speakers to connect with',            ph:'Speaker | Session time | Talking points...', big:true},
+      {id:'ppl_vendors',  title:'Implementation vendors to meet',          ph:'Vendor | Contact | Meeting agenda...', big:true},
+    ]
+  },
+  parties: {
+    title:'Events & Networking Spots', key:'parties', icon:'🎉', color:'ic-teal',
+    tasks:[
+      {id:'pt_scout',     title:'Party / dinner venues scouted',           ph:'Venue | Type | Distance | Availability...', big:true},
+      {id:'pt_book',      title:'Venue booked & confirmed',                ph:'Venue name, date/time, deposit paid'},
+      {id:'pt_quotes',    title:'Quotations obtained',                     ph:'Vendor quotes...', big:true},
+      {id:'pt_invites',   title:'Invite list prepared',                    ph:'Who to invite...', big:true},
+    ]
+  },
+  learning: {
+    title:'Learning & Sessions', key:'learning', icon:'📚', color:'ic-purple',
+    tasks:[
+      {id:'lrn_q',        title:'Research questions list prepared',        ph:'Questions to get answered at this conference...', big:true},
+      {id:'lrn_s',        title:'Key sessions to attend identified',       ph:'Session | Time | Why attend | Goal...', big:true},
+    ]
+  },
+  during: {
+    title:'During Conference', key:'during', icon:'⚡', color:'ic-yellow',
+    tasks:[
+      {id:'dur_booth',    title:'Booth fully set up & verified',           ph:'backdrop ✓, standee ✓, demo ✓, materials ✓...', big:true},
+      {id:'dur_meet',     title:'All booked meetings attended',            ph:'Meeting log: who, when, notes...', big:true},
+      {id:'dur_intel',    title:'Account intel gathered from sessions',    ph:'Competitive intel, market insights...', big:true},
+      {id:'dur_text',     title:'Leads captured via text',                 ph:'Contacts reached via text...', big:true},
+      {id:'dur_li',       title:'Leads captured via LinkedIn',             ph:'New connections + notes...', big:true},
+      {id:'dur_app',      title:'Leads captured via conference app',       ph:'In-app connections/messages...', big:true},
+      {id:'dur_spk',      title:'Key speakers met',                        ph:'Speaker interactions, follow-up needed...', big:true},
+      {id:'dur_party',    title:'Event / party invitations sent',          ph:'Who came, key conversations...', big:true},
+      {id:'dur_sess',     title:'Key sessions attended & notes recorded',  ph:'Session learnings, takeaways...', big:true},
+      {id:'dur_ans',      title:'Research questions answered',             ph:'Answers gathered...', big:true},
+    ]
+  },
+  post: {
+    title:'Post Conference', key:'post', icon:'✅', color:'ic-green',
+    tasks:[
+      {id:'post_retro',   title:'Drawing board retrospective done',        ph:'What worked | What to improve | Ideas...', big:true},
+      {id:'post_fu',      title:'Follow-up messages sent to all contacts', ph:'Name | Channel | Date sent | Response...', big:true},
+      {id:'post_crm',     title:'CRM updated with leads & contacts',       ph:'CRM update notes...', big:true},
+      {id:'post_rpt',     title:'Conference summary report written',       ph:'ROI, # meetings, leads, key insights...', big:true},
+    ]
+  },
+};
+
+const TAB_KEYS = {
+  databasing: ['databasing'],
+  pre:        ['sponsorship','story','design','leadgen','campaigns','people','parties','learning'],
+  during:     ['during'],
+  post:       ['post'],
+};
+
+// ════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════
+let S = {
+  confs: [],
+  tasks: {},
+  members: ['Unassigned','Priya','Rahul','Aarav','Sneha','Vikram','Ananya','Rohit','Divya'],
+  active: null,
+  page: 'dashboard',
+  tab: 'overview',
+  search: '',
+};
+
+function save() { try { localStorage.setItem('risa_cm4', JSON.stringify(S)); } catch(e){} }
+
+function load() {
+  try {
+    const raw = localStorage.getItem('risa_cm4');
+    if (raw) {
+      S = { ...S, ...JSON.parse(raw) };
+      const ids = S.confs.map(c=>c.id);
+      DEFAULT_CONFS.forEach(d => {
+        if (!ids.includes(d.id)) {
+          S.confs.push(blank(d));
+        } else {
+          // back-fill any empty fields with new defaults (won't overwrite user edits)
+          const existing = S.confs.find(c=>c.id===d.id);
+          if (existing) {
+            // always sync metadata from DEFAULT_CONFS so stale cached data is replaced
+            ['url','dates','venue','description','audienceCount','icpCount'].forEach(f => {
+              if (d[f]) existing[f] = d[f];
+            });
+          }
+        }
+      });
+    } else {
+      S.confs = DEFAULT_CONFS.map(blank);
+    }
+  } catch(e) { S.confs = DEFAULT_CONFS.map(blank); }
+  S.confs.forEach(c => { if (!S.tasks[c.id]) S.tasks[c.id]={}; if (!c.team) c.team=[]; });
+  S.confs.forEach(c => seedDbTasks(c));
+}
+
+function blank(d) {
+  return { url:'', dates:'', venue:'', description:'', audienceCount:'', icpCount:'', notes:'', team:[], ...d };
+}
+
+// Pre-fill databasing task values from known conference data (never overwrites user-entered data)
+function seedDbTasks(c) {
+  if (!S.tasks[c.id]) S.tasks[c.id] = {};
+  if (!S.tasks[c.id].databasing) S.tasks[c.id].databasing = {};
+  const db = S.tasks[c.id].databasing;
+  const fill = (tid, val) => {
+    if (!val) return;
+    // always sync seeded fields so stale cached values are replaced
+    db[tid] = { checked: false, owner: 'Unassigned', status: 'todo', ...(db[tid] || {}), value: val };
+  };
+  fill('db_about',    c.description);
+  fill('db_venue',    c.venue);
+  fill('db_dates',    c.dates);
+  fill('db_audience', c.audienceCount);
+  fill('db_icp',      c.icpCount);
+  fill('db_prosp',    c.url);
+}
+
+function conf(id) { return S.confs.find(c=>c.id===id); }
+
+function tget(cid,sec,tid) {
+  return S.tasks[cid]?.[sec]?.[tid] || {checked:false,owner:'Unassigned',value:'',status:'todo'};
+}
+function tset(cid,sec,tid,up) {
+  if (!S.tasks[cid]) S.tasks[cid]={};
+  if (!S.tasks[cid][sec]) S.tasks[cid][sec]={};
+  S.tasks[cid][sec][tid] = {...(S.tasks[cid][sec][tid]||{checked:false,owner:'Unassigned',value:'',status:'todo'}),...up};
+  save();
+}
+
+function prog(cid) {
+  let t=0,d=0;
+  Object.values(SEC).forEach(s=>s.tasks.forEach(tk=>{t++;if(tget(cid,s.key,tk.id).checked)d++;}));
+  return {t,d,pct:t>0?Math.round(d/t*100):0};
+}
+function sprog(cid,key) {
+  const s=SEC[key]; let d=0;
+  s.tasks.forEach(tk=>{if(tget(cid,key,tk.id).checked)d++;});
+  return {t:s.tasks.length,d,pct:s.tasks.length>0?Math.round(d/s.tasks.length*100):0};
+}
+
+// ════════════════════════════════════════════════
+//  STATUS PILL HTML
+// ════════════════════════════════════════════════
+function vertColor(v) {
+  const map = {
+    'Pharmacy':          '#7c3aed',
+    'Oncology':          '#4f86f7',
+    'Community Oncology':'#059669',
+    'Cancer Centers':    '#0d9488',
+    'Health Systems':    '#6366f1',
+    'National':          '#ea580c',
+    'Regional':          '#f59e0b',
+    'RCM':               '#db2777',
+  };
+  return map[v] || '#9ca3af';
+}
+
+function vertTag(v) {
+  const c = vertColor(v);
+  return `<span class="vtag" style="background:${c}14;color:${c};border:1px solid ${c}28">${v}</span>`;
+}
+
+function pctFill(pct) {
+  if (pct === 100) return 'var(--green)';
+  if (pct >= 60)   return 'var(--blue)';
+  if (pct >= 25)   return 'var(--yellow)';
+  return pct > 0   ? 'var(--red)' : 'var(--border2)';
+}
+
+function statusPill(status) {
+  const map = {
+    upcoming:  `<span class="pill pill-gray">○ Upcoming</span>`,
+    active:    `<span class="pill pill-blue">〜 Active</span>`,
+    completed: `<span class="pill pill-green">✓ Completed</span>`,
+  };
+  return map[status] || map.upcoming;
+}
+
+function taskStatusPill(s) {
+  const m = { todo:'color:var(--text3)', in_progress:'color:var(--yellow)', blocked:'color:var(--red)', done:'color:var(--green)' };
+  return m[s] || m.todo;
+}
+
+// ════════════════════════════════════════════════
+//  SIDEBAR
+// ════════════════════════════════════════════════
+function renderSidebar() {
+  const summBtn = document.getElementById('sb-summary-btn');
+  if (summBtn) summBtn.classList.toggle('active', S.page === 'summary');
+
+  document.getElementById('conf-list').innerHTML = S.confs.map(c => {
+    const p=prog(c.id);
+    const dotCls = c.status==='active'?'active':c.status==='completed'?'completed':'';
+    const vc = vertColor(c.vertical);
+    return `
+      <div class="ci ${S.active===c.id && S.page==='detail'?'active':''}" onclick="go('${c.id}')"
+           style="${S.active===c.id && S.page==='detail' ? `background:${vc}10;` : ''}">
+        <div class="ci-dot ${dotCls}" style="${dotCls===''?`background:${vc}50`:''}"></div>
+        <div class="ci-body">
+          <div class="ci-name" style="${S.active===c.id && S.page==='detail'?`color:${vc}`:''}">${c.name}</div>
+          <div class="ci-prog-row">
+            <div class="ci-bar"><div class="ci-fill" style="width:${p.pct}%;background:${pctFill(p.pct)}"></div></div>
+            <div class="ci-num">${p.d}/${p.t}</div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════════════════════
+function dashboard() {
+  S.active=null; S.page='dashboard'; save(); renderSidebar();
+
+  const active = S.confs.filter(c=>c.status==='active').length;
+  const upcoming = S.confs.filter(c=>c.status==='upcoming').length;
+  let tt=0,td=0;
+  S.confs.forEach(c=>{const p=prog(c.id);tt+=p.t;td+=p.d;});
+
+  document.getElementById('page-header').innerHTML = `
+    <div class="page-hdr">
+      <div class="page-hdr-inner">
+        <div class="page-hdr-left">
+          <div class="page-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <div>
+            <div class="page-title">Conference Management</div>
+            <div class="page-subtitle">GTM planning across all conferences</div>
+          </div>
+        </div>
+        <div class="page-hdr-right">
+          <button class="btn btn-blue-outline">${S.confs.length} Conferences</button>
+          <button class="btn btn-blue" onclick="openAddModal()">+ Add Conference</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('search-row-wrap').innerHTML = `
+    <div class="search-row">
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input class="search-input" type="text" placeholder="Search conferences by name, vertical, dates..."
+          value="${S.search||''}" oninput="doSearch(this.value)">
+      </div>
+      <button class="filter-btn" onclick="filterByStatus()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+        </svg>
+        Filter
+      </button>
+    </div>`;
+
+  document.getElementById('tabs-wrap').innerHTML = '';
+
+  const filtered = S.confs.filter(c =>
+    !S.search || c.name.toLowerCase().includes(S.search.toLowerCase()) || c.vertical.toLowerCase().includes(S.search.toLowerCase())
+  );
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="stat-row">
+      <div class="stat-card stat-card-blue">
+        <div class="stat-lbl">Total Conferences</div>
+        <div class="stat-val">${S.confs.length}</div>
+        <div class="stat-sub">${upcoming} upcoming</div>
+      </div>
+      <div class="stat-card stat-card-orange">
+        <div class="stat-lbl">Active</div>
+        <div class="stat-val" style="color:var(--orange)">${active}</div>
+        <div class="stat-sub">in progress</div>
+      </div>
+      <div class="stat-card stat-card-green">
+        <div class="stat-lbl">Tasks Completed</div>
+        <div class="stat-val" style="color:var(--green)">${td}<span>/${tt}</span></div>
+        <div class="stat-sub">${tt>0?Math.round(td/tt*100):0}% overall</div>
+      </div>
+      <div class="stat-card stat-card-purple">
+        <div class="stat-lbl">Completion Rate</div>
+        <div class="stat-val" style="color:var(--purple)">${tt>0?Math.round(td/tt*100):0}<span>%</span></div>
+        <div class="stat-sub">across all conferences</div>
+      </div>
+    </div>
+
+    <div class="sec-heading">${filtered.length} Conference${filtered.length!==1?'s':''}</div>
+    <div class="conf-grid">
+      ${filtered.map(c => confCard(c)).join('')}
+      <div class="cc-add" onclick="openAddModal()">
+        <div class="cc-add-plus">+</div>
+        <div>Add Conference</div>
+      </div>
+    </div>`;
+}
+
+function confCard(c) {
+  const p=prog(c.id);
+  const vc=vertColor(c.vertical);
+  return `
+    <div class="cc" onclick="go('${c.id}')" style="border-left:3px solid ${vc}">
+      <div class="cc-body">
+        <div class="cc-top">
+          <div>
+            <div class="cc-name">${c.name}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            ${statusPill(c.status)}
+            <span class="cc-arrow">→</span>
+          </div>
+        </div>
+        <div class="cc-meta" style="display:flex;align-items:center;gap:6px;margin-bottom:14px">
+          ${vertTag(c.vertical)}
+          ${c.dates?`<span style="color:var(--text3);font-size:12px">${c.dates}</span>`:''}
+        </div>
+
+        <div class="cc-row">
+          <div class="cc-field">
+            <div class="cc-field-lbl">Venue</div>
+            <div class="cc-field-val">${c.venue||'—'}</div>
+          </div>
+          <div class="cc-field">
+            <div class="cc-field-lbl">Audience</div>
+            <div class="cc-field-val">${c.audienceCount||'—'}</div>
+          </div>
+          <div class="cc-field">
+            <div class="cc-field-lbl">ICP Count</div>
+            <div class="cc-field-val">${(c.icpCount||'—').split(' ')[0]}</div>
+          </div>
+        </div>
+
+        <div class="cc-progress-lbl">
+          <span>Tasks Progress</span>
+          <span style="color:${pctFill(p.pct)};font-weight:600">${p.d}/${p.t} · ${p.pct}%</span>
+        </div>
+        <div class="cc-pbar"><div class="cc-pfill" style="width:${p.pct}%;background:${pctFill(p.pct)}"></div></div>
+      </div>
+      <div class="cc-footer" style="border-top:1px solid ${vc}22;background:${vc}08">
+        <span class="cc-footer-lbl" style="color:${vc}">Team Members</span>
+        <span class="cc-footer-val">${(c.team||[]).length > 0 ? (c.team||[]).map(m=>m.name).join(', ') : 'Not assigned'}</span>
+      </div>
+    </div>`;
+}
+
+function doSearch(v) { S.search=v; dashboard(); }
+function filterByStatus() { /* future: show filter panel */ toast('Filter coming soon','ok'); }
+
+// ════════════════════════════════════════════════
+//  SUMMARY VIEW
+// ════════════════════════════════════════════════
+function showSummary() {
+  S.active=null; S.page='summary'; save(); renderSidebar();
+
+  document.getElementById('page-header').innerHTML = `
+    <div class="page-hdr">
+      <div class="page-hdr-inner">
+        <div class="page-hdr-left">
+          <div class="page-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+              <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+            </svg>
+          </div>
+          <div>
+            <div class="page-title">All Conferences</div>
+            <div class="page-subtitle">At-a-glance summary across all ${S.confs.length} conferences</div>
+          </div>
+        </div>
+        <div class="page-hdr-right">
+          <button class="btn btn-outline" onclick="dashboard()">← Grid View</button>
+          <button class="btn btn-blue" onclick="openAddModal()">+ Add Conference</button>
+        </div>
+      </div>
+    </div>`;
+
+  document.getElementById('search-row-wrap').innerHTML = '';
+  document.getElementById('tabs-wrap').innerHTML = '';
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="summ-grid">
+      ${S.confs.map(c => summaryCard(c)).join('')}
+    </div>`;
+}
+
+function summaryCard(c) {
+  const p = prog(c.id);
+  const phases = [
+    {l:'Databasing',      keys:['databasing']},
+    {l:'Pre-Conference',  keys:['sponsorship','story','design','leadgen','campaigns','people','parties','learning']},
+    {l:'During',          keys:['during']},
+    {l:'Post',            keys:['post']},
+  ];
+  const phaseRows = phases.map(ph => {
+    let t=0, d=0;
+    ph.keys.forEach(k => { const sp=sprog(c.id,k); t+=sp.t; d+=sp.d; });
+    const pct = t>0 ? Math.round(d/t*100) : 0;
+    return `
+      <div class="sc-phase">
+        <div class="sc-phase-lbl">${ph.l}</div>
+        <div class="sc-phase-bar"><div class="sc-phase-fill" style="width:${pct}%;background:${pctFill(pct)}"></div></div>
+        <div class="sc-phase-pct" style="color:${pctFill(pct)}">${pct}%</div>
+      </div>`;
+  }).join('');
+
+  const vc = vertColor(c.vertical);
+  return `
+    <div class="sc" onclick="go('${c.id}')" style="border-left:3px solid ${vc}">
+      <div class="sc-body">
+        <div class="sc-top">
+          <div class="sc-name">${c.name}</div>
+          <div class="sc-top-right">
+            ${statusPill(c.status)}
+            <span class="sc-arrow">→</span>
+          </div>
+        </div>
+        <div class="sc-meta" style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          ${vertTag(c.vertical)}
+          ${c.dates?`<span style="font-size:11px;color:var(--text3)">${c.dates}</span>`:''}
+        </div>
+        <div class="sc-venue">${c.venue || 'Venue TBD'}</div>
+        <div class="sc-desc">${c.description || 'No description yet.'}</div>
+        <div class="sc-stats">
+          <div class="sc-stat">
+            <div class="sc-stat-lbl">Audience</div>
+            <div class="sc-stat-val">${c.audienceCount || '—'}</div>
+          </div>
+          <div class="sc-stat">
+            <div class="sc-stat-lbl">ICP</div>
+            <div class="sc-stat-val">${(c.icpCount||'—').split(' ')[0]}</div>
+          </div>
+          <div class="sc-stat">
+            <div class="sc-stat-lbl">Team</div>
+            <div class="sc-stat-val">${(c.team||[]).length || '—'}</div>
+          </div>
+          <div class="sc-stat">
+            <div class="sc-stat-lbl">Done</div>
+            <div class="sc-stat-val">${p.pct}%</div>
+          </div>
+        </div>
+        <div class="sc-phases">${phaseRows}</div>
+      </div>
+      <div class="sc-footer" style="border-top:1px solid ${vc}22;background:${vc}08">
+        <span class="sc-footer-lbl">Tasks: ${p.d} / ${p.t} completed</span>
+        <span class="sc-footer-val" style="color:${vc}">${p.pct}% overall</span>
+      </div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════
+//  CONFERENCE DETAIL
+// ════════════════════════════════════════════════
+function go(cid) { S.active=cid; S.page='detail'; S.tab='overview'; save(); renderSidebar(); renderDetail(); }
+
+function renderDetail() {
+  const c=conf(S.active); if(!c){dashboard();return;}
+  const p=prog(c.id);
+
+  document.getElementById('page-header').innerHTML = `
+    <div class="detail-hdr">
+      <div class="detail-hdr-top">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <button class="btn btn-ghost" style="padding:4px 10px;font-size:12px" onclick="dashboard()">← Back</button>
+          </div>
+          <div class="detail-hdr-name" style="border-left:3px solid ${vertColor(c.vertical)};padding-left:10px">${c.name}</div>
+          <div class="detail-hdr-meta">
+            ${statusPill(c.status)}
+            ${vertTag(c.vertical)}
+            <span class="detail-hdr-txt">${c.dates||'Dates TBD'}</span>
+            ${c.venue?`<span class="detail-hdr-txt">· ${c.venue}</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="detail-pct">
+            <div class="detail-pct-num" style="color:${pctFill(p.pct)}">${p.pct}%</div>
+            <div class="detail-pct-sub">${p.d} / ${p.t} tasks</div>
+            <div class="detail-pct-bar"><div class="detail-pct-fill" style="width:${p.pct}%;background:${pctFill(p.pct)}"></div></div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-outline" onclick="openEditModal('${c.id}')">Edit</button>
+            <button class="btn btn-blue" onclick="openFetch('${c.id}')">Fetch Details →</button>
+          </div>
+        </div>
+      </div>
+      <div class="fetch-row">
+        <span class="fetch-lbl">URL:</span>
+        <input class="fetch-input" type="url" value="${esc(c.url)}" placeholder="https://conference-website.com"
+          onchange="updC('${c.id}','url',this.value)">
+        <button class="btn btn-outline" onclick="openFetch('${c.id}')">Fetch →</button>
+      </div>
+    </div>`;
+
+  document.getElementById('search-row-wrap').innerHTML = '';
+
+  const TABS = [
+    {k:'overview',l:'Overview'},{k:'databasing',l:'Databasing'},
+    {k:'pre',l:'Pre-Conference'},{k:'during',l:'During'},{k:'post',l:'Post Conference'}
+  ];
+
+  document.getElementById('tabs-wrap').innerHTML = `
+    <div class="tabs">
+      ${TABS.map(t=>`<div class="tab${S.tab===t.k?' active':''}" onclick="stab('${t.k}')">${t.l}</div>`).join('')}
+    </div>`;
+
+  renderTab();
+}
+
+function stab(k) {
+  S.tab=k; save();
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['overview','databasing','pre','during','post'][i]===k));
+  renderTab();
+}
+
+function renderTab() {
+  const c=conf(S.active); if(!c)return;
+  const el=document.getElementById('main-content'); if(!el)return;
+  if (S.tab==='overview') { renderOverview(c,el); return; }
+  const keys=TAB_KEYS[S.tab]||[];
+  el.innerHTML=keys.map(k=>renderSection(c.id,k)).join('');
+}
+
+// ── OVERVIEW ─────────────────────────────────────
+function renderOverview(c, el) {
+  const phases=[
+    {l:'Databasing',     keys:['databasing']},
+    {l:'Pre-Conference', keys:['sponsorship','story','design','leadgen','campaigns','people','parties','learning']},
+    {l:'During',         keys:['during']},
+    {l:'Post',           keys:['post']},
+  ];
+  const phRows=phases.map(ph=>{
+    let t=0,d=0; ph.keys.forEach(k=>{const sp=sprog(c.id,k);t+=sp.t;d+=sp.d;});
+    const pct=t>0?Math.round(d/t*100):0;
+    return `<div class="ph-row">
+      <div class="ph-name">${ph.l}</div>
+      <div class="ph-bar"><div class="ph-fill" style="width:${pct}%;background:${pctFill(pct)}"></div></div>
+      <div class="ph-num" style="color:${pctFill(pct)};font-weight:${pct>0?'600':'400'}">${d}/${t} · ${pct}%</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML=`
+    <div class="ov-2col">
+      <div class="ov-card">
+        <div class="ov-card-title">Conference Details</div>
+        <div class="df"><label>Description</label>
+          <textarea placeholder="Conference description..." oninput="updC('${c.id}','description',this.value)">${c.description||''}</textarea>
+        </div>
+        <div class="df"><label>Venue</label>
+          <input type="text" value="${esc(c.venue)}" placeholder="Venue name and address" oninput="updC('${c.id}','venue',this.value)">
+        </div>
+        <div class="df"><label>Dates</label>
+          <input type="text" value="${esc(c.dates)}" placeholder="e.g. April 14–16, 2025" oninput="updC('${c.id}','dates',this.value)">
+        </div>
+        <div class="df-2col">
+          <div class="df"><label>Audience Count</label>
+            <input type="text" value="${esc(c.audienceCount)}" placeholder="e.g. 2,000" oninput="updC('${c.id}','audienceCount',this.value)">
+          </div>
+          <div class="df"><label>ICP Count</label>
+            <input type="text" value="${esc(c.icpCount)}" placeholder="e.g. 400" oninput="updC('${c.id}','icpCount',this.value)">
+          </div>
+        </div>
+        <div class="df"><label>Status</label>
+          <select onchange="updC('${c.id}','status',this.value)">
+            <option value="upcoming"  ${c.status==='upcoming'?'selected':''}>Upcoming</option>
+            <option value="active"    ${c.status==='active'?'selected':''}>Active</option>
+            <option value="completed" ${c.status==='completed'?'selected':''}>Completed</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ov-card">
+        <div class="ov-card-title">Phase Progress</div>
+        ${phRows}
+        <div class="divider"></div>
+        <div class="ov-card-title">Notes</div>
+        <textarea style="width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;color:var(--text);background:var(--bg);resize:vertical;min-height:80px"
+          placeholder="General notes about this conference..." oninput="updC('${c.id}','notes',this.value)">${c.notes||''}</textarea>
+      </div>
+    </div>
+
+    <div class="ov-card" style="margin-bottom:0">
+      <div class="ov-card-title">RISA Team Attending</div>
+      <div class="team-grid" id="tgrid">${teamHtml(c)}</div>
+    </div>`;
+}
+
+function teamHtml(c) {
+  return (c.team||[]).map((m,i)=>`
+    <div class="team-card">
+      <div class="team-ava">${(m.name||'?')[0].toUpperCase()}</div>
+      <div class="team-name">${m.name}</div>
+      <div class="team-role">${m.role||'—'}</div>
+      <button class="btn btn-red" style="font-size:10px;padding:2px 8px;margin-top:8px;width:100%" onclick="rmTeam('${c.id}',${i})">Remove</button>
+    </div>`).join('') +
+    `<div class="team-add" onclick="openTeam('${c.id}')"><span style="font-size:18px">+</span><span>Add Member</span></div>`;
+}
+
+// ── SECTIONS ─────────────────────────────────────
+function renderSection(cid, key) {
+  const sec=SEC[key], sp=sprog(cid,key);
+  return `
+    <div class="task-sec" id="sec-${key}">
+      <div class="ts-hdr" onclick="tog('${key}')">
+        <div class="ts-icon ${sec.color}">${sec.icon}</div>
+        <div class="ts-title">${sec.title}</div>
+        <span class="ts-pill">${sp.d}/${sp.t}</span>
+        <div class="ts-arrow">▼</div>
+      </div>
+      <div class="ts-body">
+        ${sec.tasks.map(t=>renderTask(cid,key,t)).join('')}
+      </div>
+    </div>`;
+}
+
+function renderTask(cid, key, task) {
+  const t=tget(cid,key,task.id);
+  const sc=taskStatusPill(t.status);
+  const v=(t.value||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  return `
+    <div class="ti">
+      <div class="ti-cb${t.checked?' done':''}" onclick="chk('${cid}','${key}','${task.id}')"></div>
+      <div class="ti-body">
+        <div class="ti-title${t.checked?' struck':''}">${task.title}</div>
+        <div class="ti-inp">
+          ${task.big
+            ? `<textarea placeholder="${task.ph}" oninput="setv('${cid}','${key}','${task.id}',this.value)">${v}</textarea>`
+            : `<input type="text" placeholder="${task.ph}" value="${v}" oninput="setv('${cid}','${key}','${task.id}',this.value)">`}
+        </div>
+        <div class="ti-meta">
+          <span class="ti-meta-lbl">Owner</span>
+          <select class="sel" onchange="setown('${cid}','${key}','${task.id}',this.value)">
+            ${S.members.map(m=>`<option value="${m}"${t.owner===m?' selected':''}>${m}</option>`).join('')}
+            <option value="__add__">+ Add person</option>
+          </select>
+          <select class="sel" style="${sc}" onchange="setstatus('${cid}','${key}','${task.id}',this.value)">
+            <option value="todo"        ${t.status==='todo'?'selected':''}        >To Do</option>
+            <option value="in_progress" ${t.status==='in_progress'?'selected':''} >In Progress</option>
+            <option value="blocked"     ${t.status==='blocked'?'selected':''}     >Blocked</option>
+            <option value="done"        ${t.status==='done'?'selected':''}        >Done</option>
+          </select>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ════════════════════════════════════════════════
+//  HANDLERS
+// ════════════════════════════════════════════════
+function chk(cid,key,tid) {
+  const cur=tget(cid,key,tid),next=!cur.checked;
+  tset(cid,key,tid,{checked:next,status:next?'done':'todo'});
+  renderSidebar(); renderTab();
+}
+function setv(cid,key,tid,v) { tset(cid,key,tid,{value:v}); }
+function setstatus(cid,key,tid,s) { tset(cid,key,tid,{status:s,checked:s==='done'}); renderSidebar(); }
+function setown(cid,key,tid,o) {
+  if (o==='__add__') {
+    const n=prompt('Team member name:');
+    if(n&&n.trim()){S.members.push(n.trim());save();tset(cid,key,tid,{owner:n.trim()});renderTab();}
+    return;
+  }
+  tset(cid,key,tid,{owner:o});
+}
+function tog(key) { document.getElementById('sec-'+key)?.classList.toggle('collapsed'); }
+function updC(cid,field,val) { const c=conf(cid);if(c){c[field]=val;save();renderSidebar();if(field==='status')renderDetail();} }
+function rmTeam(cid,i) { const c=conf(cid);if(!c?.team)return;c.team.splice(i,1);save();const el=document.getElementById('tgrid');if(el)el.innerHTML=teamHtml(c); }
+function esc(s) { return (s||'').replace(/"/g,'&quot;'); }
+
+// ════════════════════════════════════════════════
+//  MODALS
+// ════════════════════════════════════════════════
+function modal(html) { document.getElementById('mroot').innerHTML=`<div class="m-overlay" onclick="closeM(event)">${html}</div>`; }
+function closeM(e)   { if(e&&e.target!==e.currentTarget)return;document.getElementById('mroot').innerHTML=''; }
+function closeModal(){ document.getElementById('mroot').innerHTML=''; }
+
+function openAddModal() {
+  modal(`
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-title">Add Conference</div>
+      <div class="mf"><label>Conference Name *</label><input id="an" type="text" placeholder="e.g. ASCO 2025"></div>
+      <div class="mf"><label>Vertical</label>
+        <select id="av">${VERTICALS.map(v=>`<option value="${v}">${v}</option>`).join('')}</select>
+      </div>
+      <div class="mf"><label>Website URL</label><input id="au" type="url" placeholder="https://conference.com"></div>
+      <div class="mf"><label>Dates</label><input id="ad" type="text" placeholder="e.g. June 2–5, 2025"></div>
+      <div class="m-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-blue" onclick="addConf()">Add Conference →</button>
+      </div>
+    </div>`);
+}
+
+function addConf() {
+  const name=(document.getElementById('an').value||'').trim();
+  if(!name){toast('Name required','err');return;}
+  const id=name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  if(conf(id)){toast('Already exists','err');return;}
+  const c=blank({id,name,vertical:document.getElementById('av').value,status:'upcoming',
+    url:document.getElementById('au').value,dates:document.getElementById('ad').value});
+  S.confs.push(c);S.tasks[id]={};save();closeModal();renderSidebar();
+  toast(`${name} added`,'ok');go(id);
+}
+
+function openEditModal(cid) {
+  const c=conf(cid);if(!c)return;
+  modal(`
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-title">Edit ${c.name}</div>
+      <div class="mf"><label>Name</label><input id="en" type="text" value="${esc(c.name)}"></div>
+      <div class="mf"><label>Vertical</label>
+        <select id="ev">${VERTICALS.map(v=>`<option value="${v}"${c.vertical===v?' selected':''}>${v}</option>`).join('')}</select>
+      </div>
+      <div class="mf"><label>Status</label>
+        <select id="es">
+          <option value="upcoming"  ${c.status==='upcoming'?'selected':''}>Upcoming</option>
+          <option value="active"    ${c.status==='active'?'selected':''}>Active</option>
+          <option value="completed" ${c.status==='completed'?'selected':''}>Completed</option>
+        </select>
+      </div>
+      <div class="m-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-red" onclick="delConf('${cid}')">Delete</button>
+        <button class="btn btn-blue" onclick="saveEdit('${cid}')">Save →</button>
+      </div>
+    </div>`);
+}
+
+function saveEdit(cid) {
+  const c=conf(cid);if(!c)return;
+  c.name=(document.getElementById('en').value||'').trim()||c.name;
+  c.vertical=document.getElementById('ev').value;
+  c.status=document.getElementById('es').value;
+  save();closeModal();renderSidebar();renderDetail();toast('Saved','ok');
+}
+
+function delConf(cid) {
+  if(!confirm('Delete this conference?'))return;
+  S.confs=S.confs.filter(c=>c.id!==cid);delete S.tasks[cid];
+  save();closeModal();dashboard();toast('Deleted','ok');
+}
+
+function openFetch(cid) {
+  const c=conf(cid);if(!c)return;
+  modal(`
+    <div class="modal modal-lg" onclick="event.stopPropagation()">
+      <div class="modal-title">Fetch Conference Details</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+        Enter the conference website URL to auto-pull details. If blocked by CORS, enter details manually below.
+      </p>
+      <div class="mf"><label>Conference Website URL</label>
+        <input id="fu" type="url" value="${esc(c.url)}" placeholder="https://conference-website.com">
+      </div>
+      <div id="fr"></div>
+      <div class="m-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-blue" onclick="doFetch('${cid}')">Fetch Details →</button>
+      </div>
+    </div>`);
+}
+
+async function doFetch(cid) {
+  const url=(document.getElementById('fu').value||'').trim();
+  if(!url){toast('Enter a URL','err');return;}
+  const c=conf(cid);c.url=url;save();
+  const fr=document.getElementById('fr');
+  fr.innerHTML=`<div style="font-size:13px;color:var(--text3);padding:12px;background:var(--bg);border-radius:8px;margin-top:10px">Fetching...</div>`;
+  let title=c.name,dates=c.dates||'',venue=c.venue||'',description=c.description||'';
+  try {
+    const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+    const d=await r.json();
+    const h=d.contents||'';
+    const tm=h.match(/<title[^>]*>([^<]{2,80})<\/title>/i);
+    if(tm) title=tm[1].replace(/\s*[-|–·].*$/,'').trim();
+    const dm=h.match(/\b(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\w*\s+\d{1,2}(?:\s*[-–]\s*\d{1,2})?(?:,?\s*\d{4})/i);
+    if(dm) dates=dm[0];
+  } catch(e){}
+  fr.innerHTML=`
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:12px">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--blue);margin-bottom:14px">Review & Apply Details</div>
+      <div class="mf"><label>Event Name</label><input id="ft" type="text" value="${esc(title)}"></div>
+      <div class="mf"><label>Dates</label><input id="fd" type="text" value="${esc(dates)}" placeholder="e.g. April 14–16, 2025"></div>
+      <div class="mf"><label>Venue</label><input id="fv" type="text" value="${esc(venue)}" placeholder="Paste venue from website"></div>
+      <div class="mf"><label>Description</label><textarea id="fdesc" placeholder="Paste description...">${description}</textarea></div>
+      <button class="btn btn-blue" style="width:100%" onclick="applyFetch('${cid}')">Apply Details →</button>
+    </div>`;
+}
+
+function applyFetch(cid) {
+  const c=conf(cid);if(!c)return;
+  const t=document.getElementById('ft'),d=document.getElementById('fd'),
+        v=document.getElementById('fv'),desc=document.getElementById('fdesc');
+  if(t?.value.trim()) c.name=t.value.trim();
+  if(d?.value.trim()) c.dates=d.value.trim();
+  if(v?.value.trim()) c.venue=v.value.trim();
+  if(desc?.value.trim()) c.description=desc.value.trim();
+  save();closeModal();renderSidebar();renderDetail();toast('Details updated','ok');
+}
+
+function openTeam(cid) {
+  modal(`
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-title">Add Team Member</div>
+      <div class="mf"><label>Name *</label><input id="tn" type="text" placeholder="Full name"></div>
+      <div class="mf"><label>Role at Conference</label><input id="tr" type="text" placeholder="e.g. Booth Lead, Demo, Business Dev"></div>
+      <div class="m-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-blue" onclick="addTeam('${cid}')">Add →</button>
+      </div>
+    </div>`);
+}
+
+function addTeam(cid) {
+  const c=conf(cid);if(!c)return;
+  const name=(document.getElementById('tn').value||'').trim();
+  const role=(document.getElementById('tr').value||'').trim();
+  if(!name){toast('Name required','err');return;}
+  if(!c.team)c.team=[];
+  c.team.push({name,role});
+  if(!S.members.includes(name))S.members.push(name);
+  save();closeModal();
+  const el=document.getElementById('tgrid');if(el)el.innerHTML=teamHtml(c);
+}
+
+// ════════════════════════════════════════════════
+//  TOAST
+// ════════════════════════════════════════════════
+function toast(msg,type='ok') {
+  const w=document.getElementById('toasts');
+  const el=document.createElement('div');
+  el.className=`toast toast-${type}`;
+  el.innerHTML=`${type==='ok'?'✓':'⚠'} ${msg}`;
+  w.appendChild(el);
+  setTimeout(()=>el.remove(),2600);
+}
+
+// ════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+load(); renderSidebar();
+if(S.active&&conf(S.active)) renderDetail();
+else if(S.page==='summary') showSummary();
+else dashboard();
+</script>
+</body>
+</html>
