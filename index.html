@@ -1075,7 +1075,7 @@ function signIn() {
   const provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({ hd: ALLOWED_DOMAIN });
   AUTH.signInWithPopup(provider).catch(err => {
-    showAuthError('Sign-in failed. Please try again.');
+    showAuthError('Sign-in failed: ' + (err.code || '') + ' — ' + (err.message || 'Unknown error'));
     console.error(err);
   });
 }
