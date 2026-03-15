@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RISA Labs — Conference Management</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -672,7 +674,7 @@
     </div>
     <div>
       <div class="sb-name">RISA Labs</div>
-      <div class="sb-tagline">Conference GTM</div>
+      <div class="sb-tagline" id="sync-status">Connecting…</div>
     </div>
   </div>
 
@@ -950,34 +952,113 @@ let S = {
   search: '',
 };
 
-function save() { try { localStorage.setItem('risa_cm4', JSON.stringify(S)); } catch(e){} }
+// ════════════════════════════════════════════════
+//  FIREBASE
+// ════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyDpPVCsuId1Z5ikHykFzwn4SCOvteuZ4VA",
+  authDomain:        "risa-conference-mgmt.firebaseapp.com",
+  databaseURL:       "https://risa-conference-mgmt-default-rtdb.firebaseio.com",
+  projectId:         "risa-conference-mgmt",
+  storageBucket:     "risa-conference-mgmt.firebasestorage.app",
+  messagingSenderId: "695236746144",
+  appId:             "1:695236746144:web:0ba0fb5bd747d61291e2c5"
+};
+firebase.initializeApp(firebaseConfig);
+const DB = firebase.database().ref('v1');
+
+let _saveTimer   = null;
+let _lastWriteTs = 0;
+let _dbReady     = false;
+
+// Only sync data — navigation state (active/tab/page/search) stays local
+function save() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => {
+    _lastWriteTs = Date.now();
+    DB.set({ confs: S.confs, tasks: S.tasks, members: S.members, _ts: _lastWriteTs })
+      .catch(() => toast('Save failed — check connection', 'err'));
+  }, 400);
+}
+
+function _applyDefaults() {
+  S.confs.forEach(c => { if (!S.tasks[c.id]) S.tasks[c.id]={}; if (!c.team) c.team=[]; });
+  DEFAULT_CONFS.forEach(d => {
+    const ex = S.confs.find(c => c.id===d.id);
+    if (ex) ['url','dates','venue','description','audienceCount','icpCount'].forEach(f => {
+      if (d[f]) ex[f] = d[f];
+    });
+  });
+  S.confs.forEach(c => seedDbTasks(c));
+}
+
+function _render() {
+  renderSidebar();
+  if (S.active && conf(S.active)) renderDetail();
+  else if (S.page==='summary') showSummary();
+  else dashboard();
+}
 
 function load() {
-  try {
-    const raw = localStorage.getItem('risa_cm4');
-    if (raw) {
-      S = { ...S, ...JSON.parse(raw) };
-      const ids = S.confs.map(c=>c.id);
-      DEFAULT_CONFS.forEach(d => {
-        if (!ids.includes(d.id)) {
-          S.confs.push(blank(d));
-        } else {
-          // back-fill any empty fields with new defaults (won't overwrite user edits)
-          const existing = S.confs.find(c=>c.id===d.id);
-          if (existing) {
-            // always sync metadata from DEFAULT_CONFS so stale cached data is replaced
-            ['url','dates','venue','description','audienceCount','icpCount'].forEach(f => {
-              if (d[f]) existing[f] = d[f];
-            });
-          }
-        }
-      });
-    } else {
-      S.confs = DEFAULT_CONFS.map(blank);
+  // Show loading screen
+  document.getElementById('main-content').innerHTML =
+    `<div style="padding:60px;text-align:center;color:var(--text3)">
+       <div style="font-size:28px;margin-bottom:10px">⏳</div>
+       <div style="font-size:15px;font-weight:500">Connecting to database…</div>
+     </div>`;
+
+  let firstLoad = true;
+
+  DB.on('value', snap => {
+    const data = snap.val();
+
+    if (firstLoad) {
+      firstLoad = false;
+      if (data && data.confs && data.confs.length) {
+        S.confs   = data.confs;
+        S.tasks   = data.tasks   || {};
+        S.members = data.members || S.members;
+      } else {
+        // First ever load — seed defaults and write to Firebase
+        S.confs = DEFAULT_CONFS.map(blank);
+        _applyDefaults();
+        save();
+      }
+      _applyDefaults();
+      _dbReady = true;
+      const el = document.getElementById('sync-status');
+      if (el) el.innerHTML = '🟢 Live sync on';
+      _render();
+      return;
     }
-  } catch(e) { S.confs = DEFAULT_CONFS.map(blank); }
-  S.confs.forEach(c => { if (!S.tasks[c.id]) S.tasks[c.id]={}; if (!c.team) c.team=[]; });
-  S.confs.forEach(c => seedDbTasks(c));
+
+    // ── Remote update from a teammate ──
+    if (!_dbReady || !data) return;
+    // Ignore our own writes (echoed back within 2 s)
+    if (data._ts && Math.abs(data._ts - _lastWriteTs) < 2000) return;
+
+    S.confs   = data.confs   || S.confs;
+    S.tasks   = data.tasks   || S.tasks;
+    S.members = data.members || S.members;
+    _applyDefaults();
+
+    // Re-render sidebar always; re-render main only if not actively typing
+    renderSidebar();
+    const active = document.activeElement;
+    const typing = active && (active.tagName==='INPUT' || active.tagName==='TEXTAREA');
+    if (!typing) {
+      if (S.active && conf(S.active)) renderDetail();
+      else if (S.page==='summary') showSummary();
+      else dashboard();
+    }
+    toast('🔄 Synced — a teammate made changes', 'ok');
+  }, err => {
+    toast('Database connection failed', 'err');
+    // Fallback to empty defaults so app still opens
+    S.confs = DEFAULT_CONFS.map(blank);
+    _applyDefaults();
+    _render();
+  });
 }
 
 function blank(d) {
@@ -1727,10 +1808,7 @@ function toast(msg,type='ok') {
 //  INIT
 // ════════════════════════════════════════════════
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
-load(); renderSidebar();
-if(S.active&&conf(S.active)) renderDetail();
-else if(S.page==='summary') showSummary();
-else dashboard();
+load(); // Firebase async — rendering happens inside load() once data arrives
 </script>
 </body>
 </html>
