@@ -1974,10 +1974,34 @@ function renderTask(cid, key, task, isCustom) {
 function chk(cid,key,tid) {
   const cur=tget(cid,key,tid),next=!cur.checked;
   tset(cid,key,tid,{checked:next,status:next?'done':'todo'});
-  renderSidebar(); renderTab();
+  renderSidebar();
+  // Update just the affected task row in-place — no full re-render, section stays open
+  const row = document.querySelector(`.ti [onclick="chk('${cid}','${key}','${tid}')"]`)?.closest('.ti');
+  if (row) {
+    row.querySelector('.ti-cb')?.classList.toggle('done', next);
+    row.querySelector('.ti-title')?.classList.toggle('struck', next);
+    const sel = row.querySelector('select.sel[onchange*="setstatus"]');
+    if (sel) { sel.value = next ? 'done' : 'todo'; sel.style.cssText = taskStatusPill(next?'done':'todo'); }
+  }
+  // Update section progress pill
+  const sp = sprog(cid, key);
+  const pill = document.querySelector(`#sec-${key} .ts-pill`);
+  if (pill) pill.textContent = `${sp.d}/${sp.t}`;
 }
 function setv(cid,key,tid,v) { tset(cid,key,tid,{value:v}); }
-function setstatus(cid,key,tid,s) { tset(cid,key,tid,{status:s,checked:s==='done'}); renderSidebar(); }
+function setstatus(cid,key,tid,s) {
+  tset(cid,key,tid,{status:s,checked:s==='done'});
+  renderSidebar();
+  const row = document.querySelector(`.ti [onchange*="setstatus('${cid}','${key}','${tid}')"]`)?.closest('.ti');
+  if (row) {
+    const isDone = s==='done';
+    row.querySelector('.ti-cb')?.classList.toggle('done', isDone);
+    row.querySelector('.ti-title')?.classList.toggle('struck', isDone);
+  }
+  const sp = sprog(cid, key);
+  const pill = document.querySelector(`#sec-${key} .ts-pill`);
+  if (pill) pill.textContent = `${sp.d}/${sp.t}`;
+}
 function setown(cid,key,tid,o) {
   if (o==='__add__') {
     openAddMemberModal(cid,key,tid);
