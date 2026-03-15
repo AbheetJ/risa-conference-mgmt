@@ -515,6 +515,12 @@
     .task-sec.collapsed .ts-body { display: none; }
     .ts-body { border-top: 1px solid var(--border); }
 
+    /* ── DRAG REORDER ────────────────────────── */
+    .ti-drag { cursor: grab; color: var(--text3); font-size: 14px; flex-shrink: 0; margin-top: 1px; opacity: 0; transition: opacity .15s; user-select: none; padding: 0 2px; }
+    .ti:hover .ti-drag { opacity: 1; }
+    .ti.dragging { opacity: 0.4; }
+    .ti.drag-over { border-top: 2px solid var(--blue); }
+
     /* ── TASK ACTIONS ────────────────────────── */
     .ti-actions { display: flex; gap: 4px; flex-shrink: 0; opacity: 0; transition: opacity .15s; margin-top: 2px; }
     .ti:hover .ti-actions { opacity: 1; }
@@ -1759,7 +1765,20 @@ function renderSection(cid, key) {
   const sec=SEC[key], sp=sprog(cid,key);
   const hidden  = (S.tasks[cid]?.[key]?._hidden  || []);
   const custom  = (S.tasks[cid]?.[key]?._custom  || []);
-  const builtIn = sec.tasks.filter(t=>!hidden.includes(t.id));
+  const order   = (S.tasks[cid]?.[key]?._order   || []);
+  let allTasks  = [
+    ...sec.tasks.filter(t=>!hidden.includes(t.id)).map(t=>({...t,_isCustom:false})),
+    ...custom.map(t=>({...t,_isCustom:true}))
+  ];
+  if (order.length) {
+    allTasks.sort((a,b)=>{
+      const ai=order.indexOf(a.id), bi=order.indexOf(b.id);
+      if(ai===-1&&bi===-1) return 0;
+      if(ai===-1) return 1;
+      if(bi===-1) return -1;
+      return ai-bi;
+    });
+  }
   return `
     <div class="task-sec collapsed" id="sec-${key}">
       <div class="ts-hdr" onclick="tog('${key}')">
@@ -1768,9 +1787,8 @@ function renderSection(cid, key) {
         <span class="ts-pill">${sp.d}/${sp.t}</span>
         <div class="ts-arrow">▼</div>
       </div>
-      <div class="ts-body">
-        ${builtIn.map(t=>renderTask(cid,key,t,false)).join('')}
-        ${custom.map(t=>renderTask(cid,key,t,true)).join('')}
+      <div class="ts-body" id="tsb-${cid}-${key}">
+        ${allTasks.map(t=>renderTask(cid,key,t,t._isCustom)).join('')}
         <div class="ts-add-row">
           <button class="ts-add-btn" onclick="addCustomTask('${cid}','${key}')">+ Add task</button>
         </div>
@@ -1785,7 +1803,13 @@ function renderTask(cid, key, task, isCustom) {
   const renames = S.tasks[cid]?.[key]?._renames || {};
   const displayTitle = renames[task.id] || task.title;
   return `
-    <div class="ti">
+    <div class="ti" draggable="true"
+      ondragstart="onDragStart(event,'${cid}','${key}','${task.id}')"
+      ondragover="onDragOver(event,'${cid}','${key}','${task.id}')"
+      ondragleave="onDragLeave(event)"
+      ondrop="onDrop(event,'${cid}','${key}','${task.id}')"
+      ondragend="onDragEnd(event)">
+      <div class="ti-drag" title="Drag to reorder">⠿</div>
       <div class="ti-cb${t.checked?' done':''}" onclick="chk('${cid}','${key}','${task.id}')"></div>
       <div class="ti-body">
         <div class="ti-title${t.checked?' struck':''}">${displayTitle}</div>
@@ -1872,6 +1896,42 @@ function removeTask(cid,key,tid,isCustom) {
   }
   save(); renderTab();
 }
+
+// ── DRAG-TO-REORDER ─────────────────────────────
+let _drag = null;
+function _allTaskIds(cid,key) {
+  const hidden=S.tasks[cid]?.[key]?._hidden||[];
+  const custom=S.tasks[cid]?.[key]?._custom||[];
+  const order=S.tasks[cid]?.[key]?._order||[];
+  let ids=[...SEC[key].tasks.filter(t=>!hidden.includes(t.id)).map(t=>t.id),...custom.map(t=>t.id)];
+  if(order.length) ids.sort((a,b)=>{const ai=order.indexOf(a),bi=order.indexOf(b);if(ai===-1&&bi===-1)return 0;if(ai===-1)return 1;if(bi===-1)return -1;return ai-bi;});
+  return ids;
+}
+function onDragStart(e,cid,key,tid) {
+  _drag={cid,key,tid};
+  e.dataTransfer.effectAllowed='move';
+  setTimeout(()=>e.target.classList.add('dragging'),0);
+}
+function onDragOver(e,cid,key,tid) {
+  if(!_drag||_drag.cid!==cid||_drag.key!==key||_drag.tid===tid) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  e.currentTarget.classList.add('drag-over');
+}
+function onDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function onDragEnd(e)   { e.target.classList.remove('dragging'); _drag=null; document.querySelectorAll('.ti').forEach(el=>el.classList.remove('drag-over')); }
+function onDrop(e,cid,key,tid) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if(!_drag||_drag.cid!==cid||_drag.key!==key||_drag.tid===tid) return;
+  const ids=_allTaskIds(cid,key);
+  const si=ids.indexOf(_drag.tid), ti=ids.indexOf(tid);
+  if(si===-1||ti===-1) return;
+  ids.splice(si,1); ids.splice(ti,0,_drag.tid);
+  _secMeta(cid,key)._order=ids;
+  save(); renderTab();
+}
+
 function updC(cid,field,val) { const c=conf(cid);if(c){c[field]=val;save();renderSidebar();if(field==='status')renderDetail();} }
 function rmTeam(cid,i) { const c=conf(cid);if(!c?.team)return;c.team.splice(i,1);save();const el=document.getElementById('tgrid');if(el)el.innerHTML=teamHtml(c); }
 function esc(s) { return (s||'').replace(/"/g,'&quot;'); }
