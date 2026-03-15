@@ -1074,11 +1074,20 @@ const ALLOWED_DOMAIN = 'risalabs.ai';
 function signIn() {
   const provider = new firebase.auth.GoogleAuthProvider();
   provider.setCustomParameters({ hd: ALLOWED_DOMAIN });
-  AUTH.signInWithPopup(provider).catch(err => {
+  AUTH.signInWithRedirect(provider);
+}
+
+// Handle redirect result on page load
+AUTH.getRedirectResult().then(result => {
+  if (result && result.user) {
+    // Redirect sign-in succeeded — onAuthStateChanged will handle the rest
+  }
+}).catch(err => {
+  if (err.code !== 'auth/no-auth-event') {
     showAuthError('Sign-in failed: ' + (err.code || '') + ' — ' + (err.message || 'Unknown error'));
     console.error(err);
-  });
-}
+  }
+});
 
 function signOut() {
   AUTH.signOut();
@@ -1730,7 +1739,7 @@ function teamHtml(c) {
 function renderSection(cid, key) {
   const sec=SEC[key], sp=sprog(cid,key);
   return `
-    <div class="task-sec" id="sec-${key}">
+    <div class="task-sec collapsed" id="sec-${key}">
       <div class="ts-hdr" onclick="tog('${key}')">
         <div class="ts-icon ${sec.color}">${sec.icon}</div>
         <div class="ts-title">${sec.title}</div>
