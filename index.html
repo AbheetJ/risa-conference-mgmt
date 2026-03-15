@@ -515,6 +515,15 @@
     .task-sec.collapsed .ts-body { display: none; }
     .ts-body { border-top: 1px solid var(--border); }
 
+    /* ── SHEET LINK ──────────────────────────── */
+    .sheet-link-row { display:flex; align-items:center; gap:8px; margin-top:7px; }
+    .sheet-link-open { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:#16a34a; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:7px; padding:5px 11px; text-decoration:none; }
+    .sheet-link-open:hover { background:#dcfce7; }
+    .sheet-link-edit { font-size:11px; color:var(--text3); background:none; border:1px solid var(--border); border-radius:6px; padding:4px 9px; cursor:pointer; }
+    .sheet-link-edit:hover { background:var(--gray-bg); color:var(--text); }
+    .sheet-link-add { display:inline-flex; align-items:center; gap:5px; font-size:12px; color:var(--blue); background:var(--blue-tint); border:1px dashed #93c5fd; border-radius:7px; padding:5px 11px; cursor:pointer; }
+    .sheet-link-add:hover { background:#dbeafe; }
+
     /* ── DRAG REORDER ────────────────────────── */
     .ti-drag { cursor: grab; color: var(--text3); font-size: 14px; flex-shrink: 0; margin-top: 1px; opacity: 0; transition: opacity .15s; user-select: none; padding: 0 2px; }
     .ti:hover .ti-drag { opacity: 1; }
@@ -988,8 +997,8 @@ const SEC = {
     tasks:[
       {id:'lg_spk_org',   title:'Speaker list from conference organizers', ph:'Speakers: name, title, org...', big:true},
       {id:'lg_spk_app',   title:'Speaker list from conference app',        ph:'App-sourced speakers...', big:true},
-      {id:'lg_att_org',   title:'Attendee list from organizers',           ph:'Attendee details...', big:true},
-      {id:'lg_att_app',   title:'Attendee list from conference app',       ph:'App-sourced attendees...', big:true},
+      {id:'lg_att_org',   title:'Attendee list from organizers',           ph:'Attendee details...', big:true, sheetLink:true},
+      {id:'lg_att_app',   title:'Attendee list from conference app',       ph:'App-sourced attendees...', big:true, sheetLink:true},
       {id:'lg_p1',        title:'P1 targets — Cancer Centers',             ph:'Cancer Center accounts to prioritize...', big:true},
       {id:'lg_p2',        title:'P2 targets — Health Systems',             ph:'Health System accounts...', big:true},
       {id:'lg_p3',        title:'P3 contacts — Product / Pharma / Payer / EMR', ph:'Partnership targets...', big:true},
@@ -1972,11 +1981,33 @@ function renderTask(cid, key, task, isCustom) {
             <option value="done"        ${t.status==='done'?'selected':''}        >Done</option>
           </select>
         </div>
+        ${task.sheetLink ? sheetLinkHtml(cid, key, task.id, t) : ''}
       </div>
       <div class="ti-actions">
         <button class="ti-act-btn" onclick="renameTask('${cid}','${key}','${task.id}')">✏ Rename</button>
         <button class="ti-act-btn del" onclick="removeTask('${cid}','${key}','${task.id}',${isCustom})">✕ Remove</button>
       </div>
+    </div>`;
+}
+
+function sheetLinkHtml(cid, key, tid, t) {
+  const url = t.sheetUrl || '';
+  if (url) {
+    return `
+      <div class="sheet-link-row">
+        <a href="${url}" target="_blank" rel="noopener" class="sheet-link-open">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Open Google Sheet
+        </a>
+        <button class="sheet-link-edit" onclick="openSheetLinkModal('${cid}','${key}','${tid}','${url.replace(/'/g,"\\'")}')">Edit link</button>
+      </div>`;
+  }
+  return `
+    <div class="sheet-link-row">
+      <button class="sheet-link-add" onclick="openSheetLinkModal('${cid}','${key}','${tid}','')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Link Google Sheet
+      </button>
     </div>`;
 }
 
@@ -2022,6 +2053,49 @@ function setown(cid,key,tid,o) {
     return;
   }
   tset(cid,key,tid,{owner:o});
+}
+
+function openSheetLinkModal(cid, key, tid, current) {
+  modal(`
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:480px">
+      <div class="modal-hdr">
+        <div class="modal-title">Link Google Sheet</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 13px;font-size:12px;color:#15803d;line-height:1.5">
+          📋 Paste a Google Sheets URL. Anyone signed in to the dashboard can view it.
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text3);font-weight:500;display:block;margin-bottom:5px">Google Sheet URL</label>
+          <input id="sl-url" type="url" placeholder="https://docs.google.com/spreadsheets/d/..."
+            value="${current}"
+            style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;box-sizing:border-box"
+            onkeydown="if(event.key==='Enter')confirmSheetLink('${cid}','${key}','${tid}')">
+        </div>
+        <div id="sl-error" style="font-size:12px;color:var(--red);display:none"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:4px">
+          ${current ? `<button onclick="confirmSheetLink('${cid}','${key}','${tid}',true)" style="padding:8px 14px;border:1px solid #fca5a5;background:#fee2e2;color:#dc2626;border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;margin-right:auto">Remove link</button>` : ''}
+          <button onclick="closeModal()" style="padding:8px 18px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit">Cancel</button>
+          <button onclick="confirmSheetLink('${cid}','${key}','${tid}')"
+            style="padding:8px 18px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Save</button>
+        </div>
+      </div>
+    </div>`);
+  setTimeout(()=>{const el=document.getElementById('sl-url');if(el){el.focus();el.select();}},50);
+}
+
+function confirmSheetLink(cid, key, tid, remove) {
+  if (remove) {
+    tset(cid, key, tid, {sheetUrl: ''});
+    closeModal(); refreshSection(cid, key); return;
+  }
+  const url = (document.getElementById('sl-url')?.value || '').trim();
+  const err = document.getElementById('sl-error');
+  if (!url) { err.textContent='Please paste a Google Sheet URL.'; err.style.display='block'; return; }
+  if (!url.startsWith('http')) { err.textContent='Please enter a valid URL starting with https://'; err.style.display='block'; return; }
+  tset(cid, key, tid, {sheetUrl: url});
+  closeModal(); refreshSection(cid, key);
 }
 
 function openAddMemberModal(cid,key,tid) {
