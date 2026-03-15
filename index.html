@@ -703,8 +703,20 @@
     #auth-screen {
       position: fixed; inset: 0; z-index: 9000;
       background: var(--bg);
-      display: flex; align-items: center; justify-content: center;
+      display: none; align-items: center; justify-content: center;
     }
+    #auth-loading {
+      position: fixed; inset: 0; z-index: 8999;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 14px;
+    }
+    .auth-spinner {
+      width: 32px; height: 32px; border: 3px solid var(--border);
+      border-top-color: var(--blue); border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .auth-card {
       background: var(--card);
       border: 1px solid var(--border);
@@ -782,6 +794,12 @@
 </head>
 
 <body>
+
+<!-- ── AUTH LOADING ─────────────────────────────── -->
+<div id="auth-loading">
+  <div class="auth-spinner"></div>
+  <div style="font-size:13px;color:var(--text3)">Checking sign-in…</div>
+</div>
 
 <!-- ── LOGIN SCREEN ─────────────────────────────── -->
 <div id="auth-screen">
@@ -1157,14 +1175,27 @@ function signIn() {
 
 // Handle redirect result on page load
 AUTH.getRedirectResult().then(result => {
-  if (result && result.user) {
-    // Redirect sign-in succeeded — onAuthStateChanged will handle the rest
-  }
+  // onAuthStateChanged handles everything on success
 }).catch(err => {
-  if (err.code !== 'auth/no-auth-event') {
-    showAuthError('Sign-in failed: ' + (err.code || '') + ' — ' + (err.message || 'Unknown error'));
-    console.error(err);
-  }
+  const ignored = ['auth/no-auth-event', 'auth/null-user'];
+  if (ignored.includes(err.code)) return;
+  const messages = {
+    'auth/popup-blocked':           'Popup was blocked. Please allow popups for this site.',
+    'auth/cancelled-popup-request': 'Sign-in was cancelled.',
+    'auth/popup-closed-by-user':    'Sign-in window was closed before completing.',
+    'auth/unauthorized-domain':     'This domain is not authorised in Firebase. Contact Abheet.',
+    'auth/operation-not-allowed':   'Google sign-in is not enabled. Contact Abheet.',
+    'auth/network-request-failed':  'Network error — check your connection and try again.',
+    'auth/too-many-requests':       'Too many attempts. Please wait a moment and try again.',
+  };
+  const msg = messages[err.code] || ('Sign-in failed (' + (err.code||'unknown') + '). Try again or contact Abheet.');
+  // Make sure loading is hidden and login screen is shown before displaying error
+  const loading = document.getElementById('auth-loading');
+  const screen  = document.getElementById('auth-screen');
+  if (loading) loading.style.display = 'none';
+  if (screen)  screen.style.display  = 'flex';
+  showAuthError(msg);
+  console.error('[Auth error]', err.code, err.message);
 });
 
 function signOut() {
@@ -1195,17 +1226,22 @@ function setUserProfile(user) {
 
 // ── AUTH STATE LISTENER ─────────────────────────
 AUTH.onAuthStateChanged(user => {
-  const screen = document.getElementById('auth-screen');
+  const screen  = document.getElementById('auth-screen');
+  const loading = document.getElementById('auth-loading');
+  // Always hide the loading spinner once auth state is known
+  if (loading) loading.style.display = 'none';
+
   if (!user) {
-    // Not logged in — show login screen
     if (screen) screen.style.display = 'flex';
-    document.getElementById('user-profile').innerHTML = '';
+    const up = document.getElementById('user-profile');
+    if (up) up.innerHTML = '';
     return;
   }
-  // Wrong domain — kick out immediately
+  // Wrong domain — sign out and show error
   if (!user.email.endsWith('@' + ALLOWED_DOMAIN)) {
     AUTH.signOut();
-    showAuthError('Access restricted to @' + ALLOWED_DOMAIN + ' accounts.');
+    if (screen) screen.style.display = 'flex';
+    showAuthError('Access restricted to @' + ALLOWED_DOMAIN + ' accounts. Signed in as: ' + user.email);
     return;
   }
   // Valid user — hide login, show app
