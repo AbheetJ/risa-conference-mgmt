@@ -1813,6 +1813,18 @@ function renderTab() {
   open.forEach(id=>{const s=document.getElementById(id);if(s)s.classList.remove('collapsed');});
 }
 
+// Re-render a single section in-place, keeping its open/collapsed state
+function refreshSection(cid, key) {
+  const old=document.getElementById('sec-'+key);
+  if (!old) { renderTab(); return; }
+  const wasOpen=!old.classList.contains('collapsed');
+  const tmp=document.createElement('div');
+  tmp.innerHTML=renderSection(cid,key);
+  const fresh=tmp.firstElementChild;
+  if(wasOpen) fresh.classList.remove('collapsed');
+  old.replaceWith(fresh);
+}
+
 // ── OVERVIEW ─────────────────────────────────────
 function renderOverview(c, el) {
   const phases=[
@@ -2053,7 +2065,7 @@ function confirmAddMember(cid,key,tid) {
   if(S.members.some(m=>m.email&&m.email.toLowerCase()===e.toLowerCase())){errEl.textContent='A member with this email already exists.';errEl.style.display='block';return;}
   if(!S.members.some(m=>m.name===n)) { S.members.push({name:n,email:e}); save(); }
   tset(cid,key,tid,{owner:n});
-  closeModal(); renderTab();
+  closeModal(); refreshSection(cid,key);
 }
 function tog(key) { document.getElementById('sec-'+key)?.classList.toggle('collapsed'); }
 
@@ -2088,7 +2100,7 @@ function confirmAddTask(cid,key) {
   const m=_secMeta(cid,key);
   if(!m._custom) m._custom=[];
   m._custom.push({id:'cust_'+Date.now(), title});
-  save(); closeModal(); renderTab();
+  save(); closeModal(); refreshSection(cid,key);
 }
 
 function renameTask(cid,key,tid) {
@@ -2120,7 +2132,7 @@ function confirmRenameTask(cid,key,tid) {
   if(!m._renames) m._renames={};
   m._renames[tid]=next;
   if(m._custom) { const ct=m._custom.find(t=>t.id===tid); if(ct) ct.title=next; }
-  save(); closeModal(); renderTab();
+  save(); closeModal(); refreshSection(cid,key);
 }
 
 function removeTask(cid,key,tid,isCustom) {
@@ -2147,7 +2159,7 @@ function confirmRemoveTask(cid,key,tid,isCustom) {
     if(!m._hidden) m._hidden=[];
     if(!m._hidden.includes(tid)) m._hidden.push(tid);
   }
-  save(); closeModal(); renderTab();
+  save(); closeModal(); refreshSection(cid,key);
 }
 
 // ── DRAG-TO-REORDER ─────────────────────────────
@@ -2182,7 +2194,7 @@ function onDrop(e,cid,key,tid) {
   if(si===-1||ti===-1) return;
   ids.splice(si,1); ids.splice(ti,0,_drag.tid);
   _secMeta(cid,key)._order=ids;
-  save(); renderTab();
+  save(); refreshSection(cid,key);
 }
 
 function updC(cid,field,val) { const c=conf(cid);if(c){c[field]=val;save();renderSidebar();if(field==='status')renderDetail();} }
