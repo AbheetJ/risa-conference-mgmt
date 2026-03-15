@@ -523,7 +523,6 @@
     .due-pill.soon  { background:#fef3c7; color:#d97706; border:1px solid #fde68a; }
     .due-pill.overdue{ background:#fee2e2; color:#dc2626; border:1px solid #fca5a5; }
     .due-pill.done  { background:#d1fae5; color:#059669; border:1px solid #6ee7b7; text-decoration:line-through; opacity:.7; }
-    .due-input { position:absolute; top:0; left:0; opacity:0; width:100%; height:100%; cursor:pointer; }
 
     /* ── SHEET LINK ──────────────────────────── */
     .sheet-link-row { display:flex; align-items:center; gap:8px; margin-top:7px; }
@@ -2044,12 +2043,13 @@ function duePill(cid, key, tid, t) {
     else if (diff <= 3){ cls='soon';    label=`⏰ Due ${fmt}`; }
     else               { cls='future';  label=`📅 ${fmt}`; }
   }
+  const inputId = `dp-${cid}-${key}-${tid}`;
   return `
     <div class="due-wrap">
-      <button class="due-pill ${cls}">${label}</button>
-      <input class="due-input" type="date" value="${d}" title="Set due date"
-        onchange="setDueDate('${cid}','${key}','${tid}',this.value)"
-        onclick="event.stopPropagation()">
+      <button class="due-pill ${cls}" onclick="event.stopPropagation();try{document.getElementById('${inputId}').showPicker()}catch(e){document.getElementById('${inputId}').click()}">${label}</button>
+      <input id="${inputId}" type="date" value="${d}"
+        style="position:absolute;opacity:0;width:0;height:0;pointer-events:none"
+        onchange="setDueDate('${cid}','${key}','${tid}',this.value)">
     </div>`;
 }
 
