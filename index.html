@@ -1972,14 +1972,46 @@ function setv(cid,key,tid,v) { tset(cid,key,tid,{value:v}); }
 function setstatus(cid,key,tid,s) { tset(cid,key,tid,{status:s,checked:s==='done'}); renderSidebar(); }
 function setown(cid,key,tid,o) {
   if (o==='__add__') {
-    const n=(prompt('Name:')||'').trim();
-    if(!n) return;
-    const e=(prompt('Email (optional):')||'').trim();
-    if(!S.members.some(m=>m.name===n)) { S.members.push({name:n,email:e}); save(); }
-    tset(cid,key,tid,{owner:n}); renderTab();
+    openAddMemberModal(cid,key,tid);
+    // reset select back to current owner while modal is open
+    renderTab();
     return;
   }
   tset(cid,key,tid,{owner:o});
+}
+
+function openAddMemberModal(cid,key,tid) {
+  modal(`
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:400px">
+      <div class="modal-hdr"><div class="modal-title">Add Team Member</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label style="font-size:12px;color:var(--text3);font-weight:500;display:block;margin-bottom:5px">Name</label>
+          <input id="am-name" type="text" placeholder="e.g. Jordan" autofocus
+            style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--text3);font-weight:500;display:block;margin-bottom:5px">Email <span style="color:var(--text3);font-weight:400">(optional)</span></label>
+          <input id="am-email" type="email" placeholder="e.g. jordan@risalabs.ai"
+            style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;box-sizing:border-box">
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:4px">
+          <button onclick="closeModal()" style="padding:8px 18px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit">Cancel</button>
+          <button onclick="confirmAddMember('${cid}','${key}','${tid}')"
+            style="padding:8px 18px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Add</button>
+        </div>
+      </div>
+    </div>`);
+  setTimeout(()=>document.getElementById('am-name')?.focus(),50);
+}
+
+function confirmAddMember(cid,key,tid) {
+  const n=(document.getElementById('am-name')?.value||'').trim();
+  const e=(document.getElementById('am-email')?.value||'').trim();
+  if(!n){document.getElementById('am-name').style.borderColor='var(--red)';return;}
+  if(!S.members.some(m=>m.name===n)) { S.members.push({name:n,email:e}); save(); }
+  tset(cid,key,tid,{owner:n});
+  closeModal(); renderTab();
 }
 function tog(key) { document.getElementById('sec-'+key)?.classList.toggle('collapsed'); }
 
@@ -1989,26 +2021,81 @@ function _secMeta(cid,key) {
   return S.tasks[cid][key];
 }
 function addCustomTask(cid,key) {
-  const title=(prompt('Task name:') || '').trim();
-  if(!title) return;
+  modal(`
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:400px">
+      <div class="modal-hdr"><div class="modal-title">Add Task</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label style="font-size:12px;color:var(--text3);font-weight:500;display:block;margin-bottom:5px">Task name</label>
+          <input id="ct-name" type="text" placeholder="e.g. Book hotel rooms"
+            style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;box-sizing:border-box"
+            onkeydown="if(event.key==='Enter')confirmAddTask('${cid}','${key}')">
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:4px">
+          <button onclick="closeModal()" style="padding:8px 18px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit">Cancel</button>
+          <button onclick="confirmAddTask('${cid}','${key}')"
+            style="padding:8px 18px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Add Task</button>
+        </div>
+      </div>
+    </div>`);
+  setTimeout(()=>document.getElementById('ct-name')?.focus(),50);
+}
+function confirmAddTask(cid,key) {
+  const title=(document.getElementById('ct-name')?.value||'').trim();
+  if(!title){document.getElementById('ct-name').style.borderColor='var(--red)';return;}
   const m=_secMeta(cid,key);
   if(!m._custom) m._custom=[];
   m._custom.push({id:'cust_'+Date.now(), title});
-  save(); renderTab();
+  save(); closeModal(); renderTab();
 }
+
 function renameTask(cid,key,tid) {
   const m=_secMeta(cid,key);
   const current=(m._renames||{})[tid] || SEC[key]?.tasks.find(t=>t.id===tid)?.title || (m._custom||[]).find(t=>t.id===tid)?.title || '';
-  const next=(prompt('New task name:', current)||'').trim();
-  if(!next||next===current) return;
+  modal(`
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:400px">
+      <div class="modal-hdr"><div class="modal-title">Rename Task</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+        <div>
+          <label style="font-size:12px;color:var(--text3);font-weight:500;display:block;margin-bottom:5px">Task name</label>
+          <input id="rt-name" type="text" value="${current.replace(/"/g,'&quot;')}"
+            style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;box-sizing:border-box"
+            onkeydown="if(event.key==='Enter')confirmRenameTask('${cid}','${key}','${tid}')">
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:4px">
+          <button onclick="closeModal()" style="padding:8px 18px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit">Cancel</button>
+          <button onclick="confirmRenameTask('${cid}','${key}','${tid}')"
+            style="padding:8px 18px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Save</button>
+        </div>
+      </div>
+    </div>`);
+  setTimeout(()=>{const el=document.getElementById('rt-name');if(el){el.focus();el.select();}},50);
+}
+function confirmRenameTask(cid,key,tid) {
+  const next=(document.getElementById('rt-name')?.value||'').trim();
+  if(!next) return;
+  const m=_secMeta(cid,key);
   if(!m._renames) m._renames={};
   m._renames[tid]=next;
-  // Also update the stored custom task title so it shows consistently
   if(m._custom) { const ct=m._custom.find(t=>t.id===tid); if(ct) ct.title=next; }
-  save(); renderTab();
+  save(); closeModal(); renderTab();
 }
+
 function removeTask(cid,key,tid,isCustom) {
-  if(!confirm('Remove this task?')) return;
+  modal(`
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:380px">
+      <div class="modal-hdr"><div class="modal-title">Remove Task</div><button class="modal-close" onclick="closeModal()">✕</button></div>
+      <div style="padding:20px;display:flex;flex-direction:column;gap:18px">
+        <div style="font-size:14px;color:var(--text2)">Are you sure you want to remove this task?</div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button onclick="closeModal()" style="padding:8px 18px;border:1px solid var(--border);border-radius:8px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit">Cancel</button>
+          <button onclick="confirmRemoveTask('${cid}','${key}','${tid}',${isCustom})"
+            style="padding:8px 18px;background:#ef4444;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">Remove</button>
+        </div>
+      </div>
+    </div>`);
+}
+function confirmRemoveTask(cid,key,tid,isCustom) {
   const m=_secMeta(cid,key);
   if(isCustom) {
     m._custom=(m._custom||[]).filter(t=>t.id!==tid);
@@ -2018,7 +2105,7 @@ function removeTask(cid,key,tid,isCustom) {
     if(!m._hidden) m._hidden=[];
     if(!m._hidden.includes(tid)) m._hidden.push(tid);
   }
-  save(); renderTab();
+  save(); closeModal(); renderTab();
 }
 
 // ── DRAG-TO-REORDER ─────────────────────────────
