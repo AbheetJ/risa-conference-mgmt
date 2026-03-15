@@ -2055,12 +2055,7 @@ function duePill(cid, key, tid, t) {
 
 function setDueDate(cid, key, tid, val) {
   tset(cid, key, tid, {dueDate: val});
-  // Update pill in-place
-  const row = document.querySelector(`.ti [ondragstart*="'${tid}'"]`)?.closest('.ti');
-  if (row) {
-    const wrap = row.querySelector('.due-wrap');
-    if (wrap) { const t2=tget(cid,key,tid); wrap.outerHTML=duePill(cid,key,tid,t2); }
-  }
+  refreshSection(cid, key);
 }
 
 function sheetLinkHtml(cid, key, tid, t) {
