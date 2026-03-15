@@ -1805,8 +1805,12 @@ function renderTab() {
   const c=conf(S.active); if(!c)return;
   const el=document.getElementById('main-content'); if(!el)return;
   if (S.tab==='overview') { renderOverview(c,el); return; }
+  // Preserve which sections are currently open
+  const open=new Set([...document.querySelectorAll('.task-sec:not(.collapsed)')].map(e=>e.id));
   const keys=TAB_KEYS[S.tab]||[];
   el.innerHTML=keys.map(k=>renderSection(c.id,k)).join('');
+  // Restore open sections
+  open.forEach(id=>{const s=document.getElementById(id);if(s)s.classList.remove('collapsed');});
 }
 
 // ── OVERVIEW ─────────────────────────────────────
