@@ -1078,10 +1078,15 @@ const DEFAULT_MEMBERS = [
   {name:'Subhash',    email:'subhash@risalabs.ai'},
 ];
 
-// Normalise members from old string[] format to {name,email}[]
+// Normalise members: always keep DEFAULT_MEMBERS (with correct emails),
+// plus any custom extras added by the team. Drops legacy fake names.
 function normMembers(arr) {
-  if (!arr || !arr.length) return DEFAULT_MEMBERS;
-  return arr.map(m => typeof m === 'string' ? {name:m, email:''} : m);
+  const defaultNames = new Set(DEFAULT_MEMBERS.map(m => m.name));
+  const converted = (arr || []).map(m => typeof m === 'string' ? {name:m, email:''} : m);
+  // Keep only custom additions that aren't already in DEFAULT_MEMBERS and aren't old placeholders
+  const oldFakes = new Set(['Unassigned','Priya','Rahul','Aarav','Sneha','Vikram','Ananya','Rohit','Divya']);
+  const extras = converted.filter(m => !defaultNames.has(m.name) && !oldFakes.has(m.name));
+  return [...DEFAULT_MEMBERS, ...extras];
 }
 
 // Return member name for current logged-in user (matched by email)
@@ -1237,6 +1242,7 @@ function load() {
         S.confs   = data.confs;
         S.tasks   = data.tasks   || {};
         S.members = normMembers(data.members);
+        save(); // push corrected members back to Firebase
       } else {
         // First ever load — seed defaults and write to Firebase
         S.confs = DEFAULT_CONFS.map(blank);
