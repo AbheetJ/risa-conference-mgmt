@@ -801,6 +801,12 @@
     </svg>
     Summary View
   </div>
+  <div id="sb-mytasks-btn" class="sb-nav-item" onclick="showMyTasks()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+    </svg>
+    My Tasks
+  </div>
 
   <div class="sb-section">Conferences</div>
   <div id="conf-list"></div>
@@ -1059,10 +1065,37 @@ const TAB_KEYS = {
 // ════════════════════════════════════════════════
 //  STATE
 // ════════════════════════════════════════════════
+const DEFAULT_MEMBERS = [
+  {name:'Abheet',     email:'abheet@risalabs.ai'},
+  {name:'Amarpreet',  email:'amar@risalabs.ai'},
+  {name:'Dane',       email:'dane@risalabs.ai'},
+  {name:'GG',         email:'gg@risalabs.ai'},
+  {name:'GR',         email:'gr@risalabs.ai'},
+  {name:'Manching',   email:'manching@risalabs.ai'},
+  {name:'Naru',       email:'naru@risalabs.ai'},
+  {name:'Nilesh',     email:'nilesh@risalabs.ai'},
+  {name:'Sparsh',     email:'sparsh@risalabs.ai'},
+  {name:'Subhash',    email:'subhash@rislabs.ai'},
+];
+
+// Normalise members from old string[] format to {name,email}[]
+function normMembers(arr) {
+  if (!arr || !arr.length) return DEFAULT_MEMBERS;
+  return arr.map(m => typeof m === 'string' ? {name:m, email:''} : m);
+}
+
+// Return member name for current logged-in user (matched by email)
+function myName() {
+  const u = AUTH.currentUser;
+  if (!u) return null;
+  const m = S.members.find(m => m.email && m.email.toLowerCase() === u.email.toLowerCase());
+  return m ? m.name : null;
+}
+
 let S = {
   confs: [],
   tasks: {},
-  members: ['Unassigned','Priya','Rahul','Aarav','Sneha','Vikram','Ananya','Rohit','Divya'],
+  members: DEFAULT_MEMBERS,
   active: null,
   page: 'dashboard',
   tab: 'overview',
@@ -1181,6 +1214,7 @@ function _render() {
   renderSidebar();
   if (S.active && conf(S.active)) renderDetail();
   else if (S.page==='summary') showSummary();
+  else if (S.page==='mytasks') showMyTasks();
   else dashboard();
 }
 
@@ -1202,7 +1236,7 @@ function load() {
       if (data && data.confs && data.confs.length) {
         S.confs   = data.confs;
         S.tasks   = data.tasks   || {};
-        S.members = data.members || S.members;
+        S.members = normMembers(data.members);
       } else {
         // First ever load — seed defaults and write to Firebase
         S.confs = DEFAULT_CONFS.map(blank);
@@ -1224,7 +1258,7 @@ function load() {
 
     S.confs   = data.confs   || S.confs;
     S.tasks   = data.tasks   || S.tasks;
-    S.members = data.members || S.members;
+    S.members = normMembers(data.members || S.members);
     _applyDefaults();
 
     // Re-render sidebar always; re-render main only if not actively typing
@@ -1234,6 +1268,7 @@ function load() {
     if (!typing) {
       if (S.active && conf(S.active)) renderDetail();
       else if (S.page==='summary') showSummary();
+      else if (S.page==='mytasks') showMyTasks();
       else dashboard();
     }
     toast('🔄 Synced — a teammate made changes', 'ok');
@@ -1349,6 +1384,8 @@ function taskStatusPill(s) {
 function renderSidebar() {
   const summBtn = document.getElementById('sb-summary-btn');
   if (summBtn) summBtn.classList.toggle('active', S.page === 'summary');
+  const myBtn = document.getElementById('sb-mytasks-btn');
+  if (myBtn) myBtn.classList.toggle('active', S.page === 'mytasks');
 
   document.getElementById('conf-list').innerHTML = S.confs.map(c => {
     const p=prog(c.id);
@@ -1617,6 +1654,83 @@ function summaryCard(c) {
 // ════════════════════════════════════════════════
 function go(cid) { S.active=cid; S.page='detail'; S.tab='overview'; save(); renderSidebar(); renderDetail(); }
 
+// ════════════════════════════════════════════════
+//  MY TASKS VIEW
+// ════════════════════════════════════════════════
+function showMyTasks() {
+  S.active=null; S.page='mytasks'; save(); renderSidebar();
+  document.getElementById('search-row-wrap').innerHTML='';
+
+  const name = myName();
+  const u = AUTH.currentUser;
+  const displayName = name || (u && u.displayName) || 'You';
+
+  // Collect all tasks assigned to this user across all conferences
+  const rows = [];
+  S.confs.forEach(c => {
+    Object.values(SEC).forEach(sec => {
+      const hidden  = S.tasks[c.id]?.[sec.key]?._hidden || [];
+      const custom  = S.tasks[c.id]?.[sec.key]?._custom || [];
+      const allT    = [...sec.tasks.filter(t=>!hidden.includes(t.id)), ...custom];
+      allT.forEach(task => {
+        const t = tget(c.id, sec.key, task.id);
+        const renames = S.tasks[c.id]?.[sec.key]?._renames || {};
+        const title = renames[task.id] || task.title;
+        if (t.owner === name || (!name && t.owner === (u&&u.displayName))) {
+          rows.push({c, sec, task:{...task,title}, t});
+        }
+      });
+    });
+  });
+
+  // Group by conference
+  const byConf = {};
+  rows.forEach(r => {
+    if (!byConf[r.c.id]) byConf[r.c.id] = {c:r.c, items:[]};
+    byConf[r.c.id].items.push(r);
+  });
+
+  const sc = s => ({todo:'color:var(--text3)',in_progress:'color:var(--yellow)',blocked:'color:var(--red)',done:'color:var(--green)'}[s]||'');
+  const statusLabel = s => ({todo:'To Do',in_progress:'In Progress',blocked:'Blocked',done:'Done'}[s]||'To Do');
+
+  const confCards = Object.values(byConf).map(({c,items}) => `
+    <div style="background:#fff;border:1px solid var(--border);border-radius:14px;margin-bottom:16px;overflow:hidden">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+        <div style="width:10px;height:10px;border-radius:50%;background:${vertColor(c.vertical)};flex-shrink:0"></div>
+        <span style="font-weight:600;font-size:15px">${c.name}</span>
+        <span style="font-size:12px;color:var(--text3);margin-left:auto">${items.length} task${items.length!==1?'s':''}</span>
+      </div>
+      ${items.map(({sec,task,t}) => `
+        <div style="padding:11px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+          <div class="ti-cb${t.checked?' done':''}" onclick="chk('${c.id}','${sec.key}','${task.id}');showMyTasks()" style="flex-shrink:0"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:500;${t.checked?'text-decoration:line-through;color:var(--text3)':''}">${task.title}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${sec.title}</div>
+          </div>
+          <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--gray-bg);${sc(t.status)}">${statusLabel(t.status)}</span>
+          <button style="font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;padding:2px 6px" onclick="go('${c.id}')">View →</button>
+        </div>`).join('')}
+    </div>`).join('');
+
+  const empty = rows.length === 0
+    ? `<div style="text-align:center;padding:60px 20px;color:var(--text3)">
+         <div style="font-size:32px;margin-bottom:12px">✓</div>
+         <div style="font-size:15px;font-weight:500">No tasks assigned to ${displayName} yet</div>
+         <div style="font-size:13px;margin-top:6px">Tasks assigned to you will appear here</div>
+       </div>`
+    : '';
+
+  document.getElementById('page-header').innerHTML = `
+    <div class="page-hdr">
+      <div>
+        <div class="page-title">My Tasks</div>
+        <div class="page-sub">${rows.length} task${rows.length!==1?'s':''} assigned to ${displayName}</div>
+      </div>
+    </div>`;
+
+  document.getElementById('main-content').innerHTML = empty || confCards;
+}
+
 function renderDetail() {
   const c=conf(S.active); if(!c){dashboard();return;}
   const p=prog(c.id);
@@ -1821,8 +1935,9 @@ function renderTask(cid, key, task, isCustom) {
         <div class="ti-meta">
           <span class="ti-meta-lbl">Owner</span>
           <select class="sel" onchange="setown('${cid}','${key}','${task.id}',this.value)">
-            ${S.members.map(m=>`<option value="${m}"${t.owner===m?' selected':''}>${m}</option>`).join('')}
-            <option value="__add__">+ Add person</option>
+            <option value="Unassigned"${!t.owner||t.owner==='Unassigned'?' selected':''}>Unassigned</option>
+            ${[...S.members].sort((a,b)=>a.name.localeCompare(b.name)).map(m=>`<option value="${m.name}"${t.owner===m.name?' selected':''}>${m.name}</option>`).join('')}
+            <option value="__add__">+ Add person…</option>
           </select>
           <select class="sel" style="${sc}" onchange="setstatus('${cid}','${key}','${task.id}',this.value)">
             <option value="todo"        ${t.status==='todo'?'selected':''}        >To Do</option>
@@ -1851,8 +1966,11 @@ function setv(cid,key,tid,v) { tset(cid,key,tid,{value:v}); }
 function setstatus(cid,key,tid,s) { tset(cid,key,tid,{status:s,checked:s==='done'}); renderSidebar(); }
 function setown(cid,key,tid,o) {
   if (o==='__add__') {
-    const n=prompt('Team member name:');
-    if(n&&n.trim()){S.members.push(n.trim());save();tset(cid,key,tid,{owner:n.trim()});renderTab();}
+    const n=(prompt('Name:')||'').trim();
+    if(!n) return;
+    const e=(prompt('Email (optional):')||'').trim();
+    if(!S.members.some(m=>m.name===n)) { S.members.push({name:n,email:e}); save(); }
+    tset(cid,key,tid,{owner:n}); renderTab();
     return;
   }
   tset(cid,key,tid,{owner:o});
@@ -2086,7 +2204,7 @@ function addTeam(cid) {
   if(!name){toast('Name required','err');return;}
   if(!c.team)c.team=[];
   c.team.push({name,role});
-  if(!S.members.includes(name))S.members.push(name);
+  if(!S.members.some(m=>m.name===name))S.members.push({name,email:''});
   save();closeModal();
   const el=document.getElementById('tgrid');if(el)el.innerHTML=teamHtml(c);
 }
