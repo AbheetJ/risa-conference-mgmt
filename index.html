@@ -1892,9 +1892,38 @@ function renderOverview(c, el) {
       </div>
     </div>
 
-    <div class="ov-card" style="margin-bottom:0">
-      <div class="ov-card-title">RISA Team Attending</div>
-      <div class="team-grid" id="tgrid">${teamHtml(c)}</div>
+    <div class="ov-2col" style="margin-bottom:0">
+      <div class="ov-card" style="margin-bottom:0">
+        <div class="ov-card-title">Attendee Lists</div>
+        ${[
+          {tid:'lg_att_org', label:'From organizers'},
+          {tid:'lg_att_app', label:'From conference app'},
+        ].map(({tid, label}) => {
+          const t = tget(c.id, 'leadgen', tid);
+          const url = t.sheetUrl || '';
+          return `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
+              <span style="font-size:13px;color:var(--text2);flex:1">${label}</span>
+              ${url
+                ? `<div style="display:flex;align-items:center;gap:6px">
+                     <a href="${url}" target="_blank" rel="noopener" class="sheet-link-open" style="font-size:11px;padding:4px 10px">
+                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                       Open Sheet
+                     </a>
+                     <button class="sheet-link-edit" style="font-size:11px;padding:3px 8px" onclick="openSheetLinkModal('${c.id}','leadgen','${tid}','${url.replace(/'/g,"\\'")}')">Edit</button>
+                   </div>`
+                : `<button class="sheet-link-add" style="font-size:11px;padding:4px 10px" onclick="openSheetLinkModal('${c.id}','leadgen','${tid}','')">
+                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                     Link Sheet
+                   </button>`}
+            </div>`;
+        }).join('')}
+      </div>
+
+      <div class="ov-card" style="margin-bottom:0">
+        <div class="ov-card-title">RISA Team Attending</div>
+        <div class="team-grid" id="tgrid">${teamHtml(c)}</div>
+      </div>
     </div>`;
 }
 
@@ -2088,14 +2117,25 @@ function openSheetLinkModal(cid, key, tid, current) {
 function confirmSheetLink(cid, key, tid, remove) {
   if (remove) {
     tset(cid, key, tid, {sheetUrl: ''});
-    closeModal(); refreshSection(cid, key); return;
+    closeModal(); _refreshAfterSheetEdit(cid, key); return;
   }
   const url = (document.getElementById('sl-url')?.value || '').trim();
   const err = document.getElementById('sl-error');
   if (!url) { err.textContent='Please paste a Google Sheet URL.'; err.style.display='block'; return; }
   if (!url.startsWith('http')) { err.textContent='Please enter a valid URL starting with https://'; err.style.display='block'; return; }
   tset(cid, key, tid, {sheetUrl: url});
-  closeModal(); refreshSection(cid, key);
+  closeModal(); _refreshAfterSheetEdit(cid, key);
+}
+
+function _refreshAfterSheetEdit(cid, key) {
+  // If we're on the overview tab, re-render overview; otherwise refresh the section
+  if (S.tab === 'overview') {
+    const c = conf(cid); if (!c) return;
+    const el = document.getElementById('main-content'); if (!el) return;
+    renderOverview(c, el);
+  } else {
+    refreshSection(cid, key);
+  }
 }
 
 function openAddMemberModal(cid,key,tid) {
