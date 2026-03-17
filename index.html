@@ -1664,7 +1664,8 @@ function showMyTasks() {
   S.active=null; S.page='mytasks'; save(); renderSidebar();
   document.getElementById('search-row-wrap').innerHTML='';
 
-  const displayName = myName() || 'You';
+  const me = myName();
+  const displayName = me || 'You';
 
   // Collect all tasks assigned to this user across all conferences
   const rows = [];
@@ -1677,7 +1678,7 @@ function showMyTasks() {
         const t = tget(c.id, sec.key, task.id);
         const renames = S.tasks[c.id]?.[sec.key]?._renames || {};
         const title = renames[task.id] || task.title;
-        if (t.owner === name || (!name && t.owner === (u&&u.displayName))) {
+        if (me && t.owner === me) {
           rows.push({c, sec, task:{...task,title}, t});
         }
       });
